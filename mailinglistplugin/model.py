@@ -192,7 +192,6 @@ class Mailinglist(object):
         m.insert()
         if new:
             conv.first = m
-            conv.save_changes()
         for part in msg.walk():
             if part.is_multipart():
                 continue
@@ -266,11 +265,21 @@ class Mailinglist(object):
         conv.insert()
         return conv, True
 
-    @staticmethod
-    def find_mailinglist_for_address(env, address):
+    @classmethod
+    def select(cls, env, db=None):
+        if not db:
+            db = env.get_read_db()
+        cursor = db.cursor()
+        cursor.execute("SELECT id FROM mailinglist ORDER BY date")
+        for row in cursor:
+            yield cls(env, row[0])
+            
+    @classmethod
+    def select_by_address(cls, env, address, db=None):
         userpart = address.lower().split("@",1)[0]
         env.log.debug("Searching for mailinglist for %s", userpart)
-        db = env.get_read_db()
+        if not db:
+            db = env.get_read_db()
         cursor = db.cursor()
         cursor.execute('SELECT id '
                        'FROM mailinglist WHERE email = %s', (userpart,))
@@ -279,7 +288,14 @@ class Mailinglist(object):
             raise ResourceNotFound("No mailing list for %s" % address)
         else:
             return Mailinglist(env, row[0])
-    
+
+    def conversations(self):
+        cursor = self.env.db.cursor()
+        cursor.execute("""SELECT id FROM mailinglistconversations
+        WHERE list = %s ORDER BY date""", (self.id,))
+        for row in cursor:
+            yield MailinglistConversation(self.env, row[0])
+        
         
 class MailinglistRawMessage(object):
 
@@ -484,12 +500,12 @@ class MailinglistConversation(object):
             row = None
             db = env.get_read_db()
             cursor = db.cursor()
-            cursor.execute('SELECT list, date, subject '
+            cursor.execute('SELECT list, date, subject, first '
                            'FROM mailinglistconversations WHERE id = %s', (id,))
             row = cursor.fetchone()
             if row:
                 self.id = id
-                (mailinglistid, date, self.subject) = row 
+                (mailinglistid, date, self.subject, self._first) = row 
                 self.date = datetime.fromtimestamp(date, utc)
                 self.mailinglist = Mailinglist(env, mailinglistid)
             else:
@@ -556,3 +572,25 @@ class MailinglistConversation(object):
             listener.mailinglistconversation_changed(self)
 
         return True
+
+    def get_first(self):
+        if self._first is None:
+            raise ResourceNotFound("First not set")
+        return MailinglistMessage(self.env, self._first)
+
+    def set_first(self, message, db=None):
+        @self.env.with_transaction(db)
+        def do_set(db):
+            cursor = db.cursor()
+            cursor.execute('UPDATE mailinglistconversations SET first=%s WHERE id = %s',
+                           (message.id, self.id))
+            self._first = message.id
+
+    first = property(get_first, set_first)
+
+    def messages(self):
+        cursor = self.env.db.cursor()
+        cursor.execute("""SELECT id FROM mailinglistmessages
+        WHERE conversation = %s ORDER BY date""", (self.id,))
+        for row in cursor:
+            yield MailinglistMessage(self.env, row[0])

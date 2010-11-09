@@ -805,8 +805,21 @@ class MailinglistTestCase(unittest.TestCase):
                                       id="asdfasdf",
                                       body="Need boats.")
 
-                mailinglist = Mailinglist.find_mailinglist_for_address(self.env,
-                                                                       "%s@example.com" % listname)
+                mailinglist = Mailinglist.select_by_address(self.env,
+                                                            "%s@example.com" % listname)
                 message = mailinglist.insert_raw_email(bytes)
                 
-                
+        assert len(list(Mailinglist.select(self.env))) == 2
+        
+        for mailinglist in Mailinglist.select(self.env):
+            for conversation in mailinglist.conversations():
+                assert conversation.get_first() is not None
+                for message in conversation.messages():
+                    assert message
+                    for attachment in Attachment.select(self.env, 'mailinglistmessage', message.id):
+                        assert attachment
+
+            mailinglist.delete()
+            
+        assert len(list(Mailinglist.select(self.env))) == 0
+        
