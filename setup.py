@@ -39,7 +39,8 @@ setup(
     """Copyright (c) 2010, Logica. All rights reserved. Released under the 3-clause BSD license. """,
     packages = ['mailinglistplugin'],
     entry_points = {'trac.plugins': [
-        'mailinglistplugin.mailinglist = mailinglistplugin.mailinglist',
+        'mailinglistplugin.api = mailinglistplugin.api',
+        'mailinglistplugin.model = mailinglistplugin.model',        
         ]},
     install_requires = [''],
     tests_require = ['nose'],

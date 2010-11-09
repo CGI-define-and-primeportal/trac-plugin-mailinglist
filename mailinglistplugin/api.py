@@ -6,7 +6,7 @@
 
 from trac.web.chrome import ITemplateProvider, add_script, add_stylesheet, Chrome, add_notice
 from trac.web.api import ITemplateStreamFilter, IRequestFilter
-from trac.core import Component, implements, TracError
+from trac.core import Component, implements, TracError, Interface, ExtensionPoint
 from trac.config import ExtensionOption, Option, ListOption
 from trac.perm import IPermissionRequestor
 from trac.admin.api import IAdminPanelProvider
@@ -17,15 +17,56 @@ from trac.env import IEnvironmentSetupParticipant
 from trac.util.datefmt import from_utimestamp, to_utimestamp, utc, utcmax, format_datetime
 from trac.config import BoolOption, Option
 from trac.resource import ResourceNotFound
-
 import email
-
-from mailinglistplugin.model import Mailinglist, MailinglistRawMessage
-
 from utils import decode_header
+
+class IMailinglistChangeListener(Interface):
+    """Extension point interface for components that require notification
+    when mailinglists are created, modified, or deleted."""
+
+    def mailinglist_created(mailinglist):
+        """Called when a mailinglist is created."""
+
+    def mailinglist_changed(mailinglist):
+        """Called when a mailinglist is modified."""
+
+    def mailinglist_deleted(mailinglist):
+        """Called when a mailinglist is deleted."""
+
+class IMailinglistConversationChangeListener(Interface):
+    """Extension point interface for components that require notification
+    when mailinglistconversations are created, modified, or deleted."""
+
+    def mailinglistconversation_created(mailinglistconversation):
+        """Called when a mailinglistconversation is created."""
+
+    def mailinglistconversation_changed(mailinglistconversation):
+        """Called when a mailinglistconversation is modified."""
+
+    def mailinglistconversation_deleted(mailinglistconversation):
+        """Called when a mailinglistconversation is deleted."""
+
+class IMailinglistMessageChangeListener(Interface):
+    """Extension point interface for components that require notification
+    when mailinglistmessages are created, modified, or deleted."""
+
+    def mailinglistmessage_created(mailinglistmessage):
+        """Called when a mailinglistmessage is created."""
+
+    def mailinglistmessage_changed(mailinglistmessage):
+        """Called when a mailinglistmessage is modified."""
+
+    def mailinglistmessage_deleted(mailinglistmessage):
+        """Called when a mailinglistmessage is deleted."""
+
 
 class MailinglistSystem(Component):
     implements(IEnvironmentSetupParticipant, IPermissionRequestor)
+
+    mailinglistchange_listeners  = ExtensionPoint(IMailinglistChangeListener)
+    conversationchange_listeners = ExtensionPoint(IMailinglistConversationChangeListener)
+    messagechange_listeners      = ExtensionPoint(IMailinglistMessageChangeListener)
+
 
     email_domain = Option('discussion', 'email_domain', '',
       'Domain to show in the inbound email addresses.')
@@ -135,16 +176,3 @@ class MailinglistSystem(Component):
                 self.log.debug(stmt)
                 cursor.execute(stmt)
     
-    # Own API
-    def find_mailinglist_for_address(self, address):
-        userpart = address.lower().split("@",1)[0]
-        self.log.debug("Searching for mailinglist for %s", userpart)
-        db = self.env.get_db_cnx()
-        cursor = db.cursor()
-        cursor.execute('SELECT id '
-                       'FROM mailinglist WHERE email = %s', (userpart,))
-        row = cursor.fetchone()
-        if row is None:
-            raise ResourceNotFound("No mailing list for %s" % address)
-        else:
-            return Mailinglist(self.env, row[0])
