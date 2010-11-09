@@ -16,6 +16,7 @@ import email
 import re
 
 from mailinglistplugin.api import MailinglistSystem
+from trac.perm import PermissionSystem
 
 class Mailinglist(object):
 
@@ -104,7 +105,7 @@ class Mailinglist(object):
 
         for listener in MailinglistSystem(self.env).mailinglistchange_listeners:
             listener.mailinglist_created(self)
-            
+        self.resource = Resource('mailinglist', self.id)            
         return self.id
 
     def save_changes(self, db=None):
@@ -295,8 +296,106 @@ class Mailinglist(object):
         WHERE list = %s ORDER BY date""", (self.id,))
         for row in cursor:
             yield MailinglistConversation(self.env, row[0])
-        
-        
+
+    def subscribers(self):
+        """
+        Return active subscribers of current list and wheather they have
+        posting permissions or not.
+        """
+        res = {}
+        all_perms = PermissionSystem(self.env).get_all_permissions()
+        # can't use 
+        # store.get_users_with_permissions(groupname)
+        # because that requires users to be in session table as authenticated users
+        for groupname, poster in self.groups():
+            for user, permission in all_perms:
+                if permission != groupname:
+                    continue
+                if res.has_key(user):
+                    res[user]["poster"] |= poster
+                    res[user]["gposter"] |= poster
+                    res[user]["groups"].append(groupname)
+                else:
+                    res[user] = {'groups': [groupname],
+                                   'poster':poster,
+                                   'gposter':poster,
+                                   'individual': False,
+                                   'decline': False}
+        for username, poster in self.individuals():
+            if res.has_key(username):
+                res[username]["poster"] |= poster
+            else:
+                res[username] = {'groups': [],
+                                  'poster':poster,
+                                  'gposter':False,
+                                  'decline': False}
+            res[username]['individual'] = username
+        for username in self.declines():
+            if res.has_key(username):
+                res[username]["decline"] = True
+        return res
+
+    def subscribe(self, user=None, group=None, poster=False, set_decline=True, db=None):
+        if user:
+            @self.env.with_transaction(db)
+            def do_subscribe(db):
+                cursor = db.cursor()
+                # #define3 did a count rather than always delete, but
+                # that would stop poster being updated?
+                cursor.execute("""DELETE FROM mailinglistusersubscription
+                WHERE list = %s AND username = %s""", (self.id, user))
+                cursor.execute("""INSERT INTO mailinglistusersubscription
+                (list, username, poster) values (%s,%s,%s)""", (self.id, user, poster and 1 or 0))
+                if set_decline:
+                    cursor.execute('DELETE FROM mailinglistuserdecline WHERE list = %s '
+                                   'AND username = %s', (self.id, user))
+        elif group:
+            @self.env.with_transaction(db)
+            def do_subscribe(db):
+                cursor = db.cursor()
+                cursor.execute("""INSERT INTO mailinglistgroupsubscription
+                (list, groupname, poster) values (%s,%s,%s)""", (self.id, group, poster and 1 or 0))
+
+    def unsubscribe(self, user=None, group=None, set_decline=True, db=None):
+        if user:
+            @self.env.with_transaction(db)
+            def do_unsubscribe(db):
+                cursor = db.cursor()
+                # #define3 did a count rather than always delete, but
+                # that would stop poster being updated?
+                cursor.execute("""DELETE FROM mailinglistusersubscription
+                WHERE list = %s AND username = %s""", (self.id, user))
+                if set_decline:
+                    cursor.execute("""INSERT INTO mailinglistuserdecline
+                    (list, username) values (%s,%s)""", (self.id, user))
+        elif group:
+            @self.env.with_transaction(db)
+            def do_unsubscribe(db):
+                cursor = db.cursor()
+                cursor.execute("""DELETE FROM mailinglistgroupsubscription
+                WHERE list = %s AND groupname = %s""", (self.id, group))
+
+    def individuals(self):
+        db = self.env.get_read_db()
+        cursor = db.cursor()
+        cursor.execute('SELECT username, poster FROM mailinglistusersubscription WHERE list = %s', (self.id,))
+        for row in cursor:
+            yield row[0], bool(row[1])
+
+    def groups(self):
+        db = self.env.get_read_db()
+        cursor = db.cursor()
+        cursor.execute('SELECT groupname, poster FROM mailinglistgroupsubscription WHERE list = %s', (self.id,))
+        for row in cursor:
+            yield row[0], bool(row[1])
+
+    def declines(self):
+        db = self.env.get_read_db()
+        cursor = db.cursor()
+        cursor.execute('SELECT username FROM mailinglistuserdecline WHERE list = %s', (self.id,))
+        for row in cursor:
+            yield row[0]
+
 class MailinglistRawMessage(object):
 
     def __init__(self, env, id=None,
@@ -353,7 +452,8 @@ class MailinglistRawMessage(object):
                            ' VALUES (%s, %s)',
                            (self.mailinglist.id, self.bytes))
             self.id = db.get_last_id(cursor, 'mailinglistraw')
-
+        self.resource = Resource('mailinglistrawmessage', self.id,
+                                 parent=self.mailinglist.resource)
         return self.id
 
     def save_changes(self, db=None):
@@ -461,7 +561,8 @@ class MailinglistMessage(object):
             
         for listener in MailinglistSystem(self.env).messagechange_listeners:
             listener.mailinglistmessage_created(self)
-            
+        self.resource = Resource('mailinglistmessage', self.id,
+                                 parent=self.conversation.resource)
         return self.id
 
     def save_changes(self, db=None):
@@ -556,7 +657,8 @@ class MailinglistConversation(object):
 
         for listener in MailinglistSystem(self.env).conversationchange_listeners:
             listener.mailinglistconversation_created(self)
-
+        self.resource = Resource('mailinglistconversation', self.id,
+                                 parent=self.mailinglist.resource)
         return self.id
 
     def save_changes(self, db=None):

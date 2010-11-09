@@ -8,7 +8,7 @@ from trac.web.chrome import ITemplateProvider, add_script, add_stylesheet, Chrom
 from trac.web.api import ITemplateStreamFilter, IRequestFilter
 from trac.core import Component, implements, TracError, Interface, ExtensionPoint
 from trac.config import ExtensionOption, Option, ListOption
-from trac.perm import IPermissionRequestor
+from trac.perm import IPermissionRequestor, IPermissionPolicy
 from trac.admin.api import IAdminPanelProvider
 from trac.cache import cached
 from trac.db import Table, Column, Index
@@ -59,7 +59,6 @@ class IMailinglistMessageChangeListener(Interface):
     def mailinglistmessage_deleted(mailinglistmessage):
         """Called when a mailinglistmessage is deleted."""
 
-
 class MailinglistSystem(Component):
     implements(IEnvironmentSetupParticipant, IPermissionRequestor)
 
@@ -77,7 +76,9 @@ class MailinglistSystem(Component):
         return ['MAILINGLIST_VIEW',
                 'MAILINGLIST_CREATE',
                 'MAILINGLIST_DELETE',
+                'MAILINGLIST_POST',
                 ('MAILINGLIST_ADMIN', ['MAILINGLIST_VIEW',
+                                       'MAILINGLIST_POST',                                       
                                        'MAILINGLIST_CREATE',
                                        'MAILINGLIST_DELETE'])]
 

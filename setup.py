@@ -40,7 +40,8 @@ setup(
     packages = ['mailinglistplugin'],
     entry_points = {'trac.plugins': [
         'mailinglistplugin.api = mailinglistplugin.api',
-        'mailinglistplugin.model = mailinglistplugin.model',        
+        'mailinglistplugin.model = mailinglistplugin.model',
+        'mailinglistplugin.perm = mailinglistplugin.perm',
         ]},
     install_requires = [''],
     tests_require = ['nose'],
