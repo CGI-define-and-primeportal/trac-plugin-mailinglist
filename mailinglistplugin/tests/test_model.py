@@ -33,10 +33,11 @@ class MailinglistTestCase(unittest.TestCase):
 
     def setUp(self):
         self.env = EnvironmentStub(enable=[MailinglistPermissionPolicy,
+                                           DefaultPermissionPolicy,
                                            MailinglistSystem,
                                            DefaultPermissionStore,
                                            SQLiteConnector])
-        self.env.config.set('trac', 'permission_policies', 'MailinglistPermissionPolicy')
+        self.env.config.set('trac', 'permission_policies', 'MailinglistPermissionPolicy, DefaultPermissionPolicy')
 
         self.mailinglist_system = MailinglistSystem(self.env)
         self.mailinglist_system.environment_created()
@@ -238,3 +239,45 @@ class MailinglistTestCase(unittest.TestCase):
 
         mailinglist.unsubscribe(group="group1")
         assert "sparrowj" not in mailinglist.subscribers()        
+
+    def test_read_private_list_accepted(self):
+        mailinglist = Mailinglist(self.env,
+                                  emailaddress="LIST1", private=True, postperm="RESTRICTED")
+        mailinglist.insert()
+        mailinglist.subscribe(user="smithj", poster=False)        
+        mailinglist.subscribe(user="sparrowj", poster=True)
+        PermissionCache(self.env, 'sparrowj',
+                        mailinglist.resource).assert_permission('MAILINGLIST_VIEW')
+
+    def test_read_nonprivate_list_accepted(self):
+        PermissionSystem(self.env).grant_permission('members', 'MAILINGLIST_VIEW')
+        PermissionSystem(self.env).grant_permission('randomuser', 'members')
+        mailinglist = Mailinglist(self.env,
+                                  emailaddress="LIST1", private=False, postperm="RESTRICTED")
+        mailinglist.insert()
+        mailinglist.subscribe(user="smithj", poster=False)        
+        mailinglist.subscribe(user="sparrowj", poster=True)
+        PermissionCache(self.env, 'randomuser',
+                        mailinglist.resource).assert_permission('MAILINGLIST_VIEW')
+
+    @raises(PermissionError)
+    def test_read_nonprivate_list_denied(self):
+        # not a private list, but in general the user isn't allowed to
+        # view mailing lists (e.g., not a member of this project at all.)
+        mailinglist = Mailinglist(self.env,
+                                  emailaddress="LIST1", private=False, postperm="RESTRICTED")
+        mailinglist.insert()
+        mailinglist.subscribe(user="smithj", poster=False)        
+        mailinglist.subscribe(user="sparrowj", poster=True)
+        PermissionCache(self.env, 'randomuser',
+                        mailinglist.resource).assert_permission('MAILINGLIST_VIEW')
+
+    @raises(PermissionError)
+    def test_read_private_list_denied(self):
+        mailinglist = Mailinglist(self.env,
+                                  emailaddress="LIST1", private=True, postperm="RESTRICTED")
+        mailinglist.insert()
+        mailinglist.subscribe(user="smithj", poster=False)        
+        mailinglist.subscribe(user="sparrowj", poster=True)
+        PermissionCache(self.env, 'randomuser',
+                        mailinglist.resource).assert_permission('MAILINGLIST_VIEW')
