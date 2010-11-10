@@ -143,12 +143,6 @@ class MailinglistSystem(Component):
             Column('username'),
             Index(['list','username']),
             ],
-        Table('mailinglistusermanager', key=('id'))[
-            Column('id', auto_increment=True),
-            Column('list', type='int'),
-            Column('username'),
-            Index(['list','username']),
-            ],
         ]
 
     def environment_created(self):

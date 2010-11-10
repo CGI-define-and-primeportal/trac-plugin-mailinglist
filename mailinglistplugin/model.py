@@ -86,7 +86,6 @@ class Mailinglist(object):
             cursor.execute('DELETE FROM mailinglistusersubscription WHERE list = %s', (self.id,))
             cursor.execute('DELETE FROM mailinglistgroupsubscription WHERE list = %s', (self.id,))
             cursor.execute('DELETE FROM mailinglistuserdecline WHERE list = %s', (self.id,))
-            cursor.execute('DELETE FROM mailinglistusermanager WHERE list = %s', (self.id,))        
 
         for listener in MailinglistSystem(self.env).mailinglistchange_listeners:
             listener.mailinglist_deleted(self)
