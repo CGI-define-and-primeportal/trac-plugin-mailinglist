@@ -275,8 +275,11 @@ class Mailinglist(object):
             yield cls(env, row[0])
             
     @classmethod
-    def select_by_address(cls, env, address, db=None):
-        userpart = address.lower().split("@",1)[0]
+    def select_by_address(cls, env, address, localpart=False, db=None):
+        if localpart:
+            userpart = address.lower()
+        else:
+            userpart = address.lower().split("@",1)[0]
         env.log.debug("Searching for mailinglist for %s", userpart)
         if not db:
             db = env.get_read_db()
@@ -296,11 +299,19 @@ class Mailinglist(object):
         WHERE list = %s ORDER BY date""", (self.id,))
         return cursor.fetchone()[0]
 
-    def conversations(self):
+    def conversations(self, offset=None, limit=None):
         db = self.env.get_read_db()
-        cursor = db.cursor()        
+        cursor = db.cursor()
+        if limit:
+            limit_term = "LIMIT %d" % limit
+        else:
+            limit_term = ""
+        if offset:
+            offset_term = "OFFSET %d" % offset
+        else:
+            offset_term = ""
         cursor.execute("""SELECT id FROM mailinglistconversations
-        WHERE list = %s ORDER BY date""", (self.id,))
+        WHERE list = %%s ORDER BY date %s %s""" % (limit_term, offset_term), (self.id,))
         for row in cursor:
             yield MailinglistConversation(self.env, row[0])
 
@@ -709,6 +720,13 @@ class MailinglistConversation(object):
 
     first = property(get_first, set_first)
 
+    def count_messages(self):
+        db = self.env.get_read_db()
+        cursor = db.cursor()
+        cursor.execute("""SELECT count(id) FROM mailinglistmessages
+        WHERE conversation = %s ORDER BY date""", (self.id,))
+        return cursor.fetchone()[0]
+            
     def messages(self):
         db = self.env.get_read_db()
         cursor = db.cursor()

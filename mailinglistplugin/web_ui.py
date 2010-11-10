@@ -3,14 +3,16 @@ from trac.perm import IPermissionRequestor
 from trac.resource import Resource, IResourceManager
 from trac.config import BoolOption, IntOption, ListOption
 from trac.web.chrome import INavigationContributor, ITemplateProvider, \
-                            add_stylesheet, add_link
+                            add_stylesheet, add_link, add_ctxtnav
 from trac.web.main import IRequestHandler
 from trac.timeline.api import ITimelineEventProvider
 from trac.util.translation import _
 
+import re
 from genshi.builder import tag
 
-from mailinglistplugin.model import Mailinglist
+from mailinglistplugin.model import Mailinglist, MailinglistConversation
+from mailinglistplugin.utils import wrap_and_quote
 
 import pkg_resources
 
@@ -33,22 +35,36 @@ class MailinglistModule(Component):
         yield ('mainnav', 'mailinglist',
                tag.a(_('Mailinglist'), href=req.href.mailinglist()))
 
-
     # IRequestHandler methods
     def match_request(self, req):
         if req.path_info.startswith("/mailinglist"):
+            match = re.match(r'/mailinglist/([^/]+)$', req.path_info)
+            if match:
+                req.args['listname'] = match.group(1)
+            match = re.match(r'/mailinglist/[^/]+/([0-9]+)$', req.path_info)
+            if match:
+                req.args['conversationid'] = match.group(1)
             return True
 
     def process_request(self, req):
+        mailinglists = [m for m in Mailinglist.select(self.env)
+                        if "MAILINGLIST_VIEW" in req.perm(m.resource)]
+        data = {"mailinglists": mailinglists,
+                "wrap_and_quote": wrap_and_quote}
+        for mailinglist in mailinglists:
+            add_ctxtnav(req,
+                        _("List: %s") % mailinglist.name,
+                        req.href.mailinglist(mailinglist.emailaddress))
 
-        mailinglists = []
-        for mailinglist in Mailinglist.select(self.env):
-            if "MAILINGLIST_VIEW" in req.perm(mailinglist.resource):
-                mailinglists.append(mailinglist)
-                
-        data = {
-            "mailinglists": mailinglists,
-            }
-        
-        return 'mailinglist_list.html', data, None
+        if 'conversationid' in req.args:
+            conversation = MailinglistConversation(self.env, req.args['conversationid'])
+            data['conversation'] = conversation
+            return 'mailinglist_conversation.html', data, None
+        elif 'listname' in req.args:
+            mailinglist = Mailinglist.select_by_address(self.env,
+                                                        req.args['listname'], localpart=True)
+            data['mailinglist'] = mailinglist
+            return 'mailinglist_conversations.html', data, None
+        else:
+            return 'mailinglist_list.html', data, None
     

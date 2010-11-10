@@ -6,8 +6,46 @@ from email.MIMEMultipart import MIMEMultipart
 from email.Utils import formatdate, make_msgid
 
 from datetime import datetime
+import re
 
 from trac.util.datefmt import utc, to_timestamp
+
+def wrap_and_quote(text, width):
+    text = re.sub('(\n *){3,}', '\n\n', text)
+    idx = text.find('________________________________\n\nFr')
+    if idx == -1:
+        idx = text.find('-----Original Message-----\nFr')
+    if idx == -1:
+        idx = text.find('-----Ursprungligt meddelande-----\nFr')
+    if idx > 20:
+        return wrap(text[:idx], width), wrap(text[idx:], width)
+    else:
+        return wrap(text, width), ''
+
+# from: http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/148061
+def wrap(text, width):
+    """
+    A word-wrap function that preserves existing line breaks
+    and most spaces in the text. Expects that existing line
+    breaks are posix newlines (\n).
+    """
+    return reduce(lambda line, word, width=width: '%s%s%s' %
+                  (line,
+                   ' \n'[(len(line)-line.rfind('\n')-1
+                          + len(word.split('\n',1)[0]
+                                ) >= width)],
+                   word),
+                  text.split(' ')
+                  )
+
+_r1 = re.compile('-{2,}')
+_r2 = re.compile('_{2,}')
+_r3 = re.compile('={2,}')
+def sanetize_text(text):
+    """
+    Sanetizes text by shortening overly long '--','__' and '==' sequences.
+    """
+    return _r1.sub('--', _r2.sub('__', _r3.sub('==', text)))
 
 def encode_header(value, charset=None):
     """
