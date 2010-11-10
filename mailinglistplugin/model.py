@@ -710,7 +710,8 @@ class MailinglistConversation(object):
     first = property(get_first, set_first)
 
     def messages(self):
-        cursor = self.env.db.cursor()
+        db = self.env.get_read_db()
+        cursor = db.cursor()
         cursor.execute("""SELECT id FROM mailinglistmessages
         WHERE conversation = %s ORDER BY date""", (self.id,))
         for row in cursor:
