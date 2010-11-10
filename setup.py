@@ -38,10 +38,16 @@ setup(
     license = \
     """Copyright (c) 2010, Logica. All rights reserved. Released under the 3-clause BSD license. """,
     packages = ['mailinglistplugin'],
+    package_data = {'mailinglistplugin': [
+        'templates/*.html',
+        'htdocs/css/*.css',
+        'htdocs/*.png']
+    },
     entry_points = {'trac.plugins': [
         'mailinglistplugin.api = mailinglistplugin.api',
         'mailinglistplugin.model = mailinglistplugin.model',
         'mailinglistplugin.perm = mailinglistplugin.perm',
+        'mailinglistplugin.web_ui = mailinglistplugin.web_ui',        
         ]},
     install_requires = [''],
     tests_require = ['nose'],

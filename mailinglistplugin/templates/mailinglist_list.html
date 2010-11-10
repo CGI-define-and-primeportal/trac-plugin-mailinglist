@@ -1,0 +1,73 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:py="http://genshi.edgewall.org/"
+      xmlns:xi="http://www.w3.org/2001/XInclude">
+  <xi:include href="layout.html" />
+  <xi:include href="macros.html" />
+  <head>
+    <title>Mailinglists</title>
+  </head>
+  <body>
+    <div id="content" class="mailinglist">
+      <table class="listing">
+	<thead>
+	  <tr>
+	    <th>Name</th>
+	    <th>Address</th>
+	    <th>Subscribed</th>
+	  </tr>
+	</thead>
+	<tbody>
+	  <py:for each="mailinglist in mailinglists">
+	    <tr>
+	      <td>
+		<a href="${href.mailinglist(mailinglist.emailaddress)}" 
+		   py:content="mailinglist.name">
+		</a>
+	      </td>
+	      <td><a href="mailto:${mailinglist.addr()}" py:content="mailinglist.addr()"/></td>
+	      <td py:content="mailinglist.is_subscribed(req.authname)"/>
+	    </tr>
+	    <tr>
+	      <td colspan="3">
+		<dl>
+		  <dt>Access</dt>
+		  <dd>${mailinglist.private and "Private" or "Public"}</dd>
+		  <dt>Post permissions</dt>
+		  <dd>
+		    ${{
+		    'RESTRICTED':'Restricted to posters',
+		    'MEMBERS':'Restricted to members',
+		    'OPEN':'Restricted to members'
+		    }[mailinglist.postperm]}
+		  </dd>
+		  <dt>Replies go to</dt>
+		  <dd>
+		    ${{
+		    'LIST':'List',
+		    'SENDER':'Sender'
+		    }[mailinglist.replyto]}
+		  </dd>
+		  <dt>Message threads</dt>
+		  <dd>${mailinglist.count_conversations()}</dd>
+		</dl>
+		<dl>
+		  <dt>Members</dt>
+		  <dd>
+		    <ul>
+		      <li py:for="subscriber, details in mailinglist.subscribers().items()"
+			  py:if="not details['decline']">
+			${subscriber}
+		      </li>
+		    </ul>
+		  </dd>
+		</dl>
+	      </td>
+	    </tr>
+	  </py:for>
+	</tbody>
+      </table>
+    </div>
+  </body>
+</html>

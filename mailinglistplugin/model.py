@@ -289,12 +289,28 @@ class Mailinglist(object):
         else:
             return Mailinglist(env, row[0])
 
+    def count_conversations(self):
+        db = self.env.get_read_db()
+        cursor = db.cursor()
+        cursor.execute("""SELECT count(id) FROM mailinglistconversations
+        WHERE list = %s ORDER BY date""", (self.id,))
+        return cursor.fetchone()[0]
+
     def conversations(self):
-        cursor = self.env.db.cursor()
+        db = self.env.get_read_db()
+        cursor = db.cursor()        
         cursor.execute("""SELECT id FROM mailinglistconversations
         WHERE list = %s ORDER BY date""", (self.id,))
         for row in cursor:
             yield MailinglistConversation(self.env, row[0])
+
+    def is_subscribed(self, username):
+        subscribers = self.subscribers()
+        if username not in subscribers:
+            return False
+        if subscribers[username]['decline'] is True:
+            return False
+        return True
 
     def subscribers(self):
         """
