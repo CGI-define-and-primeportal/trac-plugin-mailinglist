@@ -123,9 +123,9 @@ class Mailinglist(object):
     def addr(self, bounce=False):
         maildomain = MailinglistSystem(self.env).email_domain
         if bounce:
-            return "%s+bounces@%s" % (self.email, self.maildomain)
+            return "%s+bounces@%s" % (self.emailaddress, maildomain)
         else:
-            return "%s@%s" % (self.email, self.maildomain)
+            return "%s@%s" % (self.emailaddress, maildomain)
 
     def insert_raw_email(self, bytes):
         msg = email.message_from_string(bytes.encode('ascii'))

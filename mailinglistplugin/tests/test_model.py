@@ -59,6 +59,8 @@ class MailinglistTestCase(unittest.TestCase):
                                       emailaddress="list%s" % i, name="Sample List", private=True,
                                       postperm="OPEN")
             mailinglist.insert()
+            assert mailinglist.addr()
+            assert mailinglist.addr(bounce=True)            
 
     def test_removing_lists(self):
         l = []
