@@ -319,12 +319,17 @@ class Mailinglist(object):
         """
         res = {}
         all_perms = PermissionSystem(self.env).get_all_permissions()
+
+        permission_or_groupnames = set([p[1] for p in all_perms])
+                
         # can't use 
         # store.get_users_with_permissions(groupname)
         # because that requires users to be in session table as authenticated users
         for groupname, poster in self.groups():
             for user, permission in all_perms:
                 if permission != groupname:
+                    continue
+                if user in permission_or_groupnames:
                     continue
                 if res.has_key(user):
                     res[user]["poster"] |= poster
