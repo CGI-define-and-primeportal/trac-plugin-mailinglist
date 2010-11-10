@@ -139,7 +139,7 @@ class Mailinglist(object):
         if msg['date']:
             date = parse_rfc2822_date(msg['date'])
         else:
-            date = datetime.now(tz.FixedOffsetTimezone(0))
+            date = datetime.now(utc)
         subject = decode_header(msg['Subject'])
 
         # Fetch or create a category for the message

@@ -682,7 +682,6 @@ Message-Id: <%(id)s@example.org>
 From: %(sender)s <%(email)s>
 To: List <%(list)s@%(domain)s>
 Subject: %(subject)s
-Date: %(asctime)s
 References: <something@example.com> <%(id)s@example.com>
 Message-Id: <%(id)s@example.org>
 
