@@ -423,9 +423,8 @@ class MailinglistRawMessage(object):
                                  parent=self.mailinglist.resource)
         
     def __repr__(self):
-        return '<%s %r: %s>' % (
+        return '<%s %s>' % (
             self.__class__.__name__,
-            self.title,
             self.id
         )
 
