@@ -19,6 +19,8 @@ from trac.config import BoolOption, Option
 from trac.resource import ResourceNotFound
 import email
 from utils import decode_header
+from announcer.api import AnnouncementSystem, IAnnouncementProducer, \
+     AnnouncementEvent, IAnnouncementSubscriber, IAnnouncementFormatter
 
 class IMailinglistChangeListener(Interface):
     """Extension point interface for components that require notification
@@ -60,7 +62,9 @@ class IMailinglistMessageChangeListener(Interface):
         """Called when a mailinglistmessage is deleted."""
 
 class MailinglistSystem(Component):
-    implements(IEnvironmentSetupParticipant, IPermissionRequestor)
+    implements(IEnvironmentSetupParticipant, IPermissionRequestor,
+               IMailinglistMessageChangeListener,
+               IAnnouncementProducer, IAnnouncementFormatter, IAnnouncementSubscriber)
 
     mailinglistchange_listeners  = ExtensionPoint(IMailinglistChangeListener)
     conversationchange_listeners = ExtensionPoint(IMailinglistConversationChangeListener)
@@ -171,3 +175,72 @@ class MailinglistSystem(Component):
                 self.log.debug(stmt)
                 cursor.execute(stmt)
     
+    # IMailinglistMessageChangeListener
+
+    def mailinglistmessage_created(self, message):
+        """Called when a mailinglistmessage is created."""
+        announcer = AnnouncementSystem(self.env)
+        announcer.send(MailinglistMessageEvent('mailinglist', 'created', message))
+
+    def mailinglistmessage_changed(self, message):
+        """Called when a mailinglistmessage is modified."""
+
+    def mailinglistmessage_deleted(self, message):
+        """Called when a mailinglistmessage is deleted."""
+
+    # IAnnouncementProducer methods
+    
+    def realms(self):
+        yield 'mailinglist'
+
+    # IAnnouncementFormatter
+
+    def styles(self, transport, realm):
+        if realm == "discussion":
+            yield "text/html"
+        elif realm == "mailinglist":
+            yield "verbatim"
+        
+    def alternative_style_for(self, transport, realm, style):
+        return None
+        
+    def format(self, transport, realm, style, event):
+        if realm == "mailinglist" and style == "verbatim":
+            mail = email.message_from_string(event.target.raw.bytes)
+            self._set_header(mail, 'X-BeenThere', event.target.conversation.mailinglist.addr(), append=True)
+            self._set_header(mail, 'Precedence', 'list')
+            self._set_header(mail, 'Errors-To', event.target.conversation.mailinglist.addr(bounce=True))            
+            self._set_header(mail, 'Return-Path', event.target.conversation.mailinglist.addr(bounce=True))
+            self._set_header(mail, 'List-Id', event.target.conversation.mailinglist.addr())
+            if event.target.conversation.mailinglist.replyto == 'LIST':
+                self._set_header(mail, 'Reply-To', event.target.conversation.mailinglist.addr())
+            elif event.target.from_email:
+                self._set_header(mail, 'Reply-To', event.target.from_email)
+            return mail
+                
+    def _set_header(self, mail, header, value, charset=None, append=False):
+        if append and mail[header]:
+            h = email.Header.decode_header(mail[header])
+            h.append((value, charset))
+            mail[header] = email.Header.make_header(h)
+            return
+        else:
+            del mail[header]
+        mail[header] = email.Header.Header(value, charset=charset)
+
+    # IAnnouncementSubscriber methods
+
+    def subscriptions(self, event):
+        if event.realm is not 'mailinglist':
+            return
+
+        for subscriber, details in event.target.conversation.mailinglist.subscribers().items():
+            if details['decline']:
+                self.log.debug("Subscriber declined for %s is %s (%s)", event.target, subscriber, details)                
+                continue
+            self.log.debug("Subscriber for %s is %s (%s)", event.target, subscriber, details)
+            yield ("email", subscriber, True, None)
+  
+class MailinglistMessageEvent(AnnouncementEvent):
+    def __init__(self, realm, category, target):
+        AnnouncementEvent.__init__(self, realm, category, target)
