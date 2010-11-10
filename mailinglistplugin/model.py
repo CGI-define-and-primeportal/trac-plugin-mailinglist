@@ -78,7 +78,7 @@ class Mailinglist(object):
             cursor = db.cursor()
             cursor.execute('SELECT id FROM mailinglistmessages WHERE list = %s', (self.id,))
             for row in cursor:
-                Attachment.delete_all(self.env, 'mailinglistmessages', row[0], db)
+                Attachment.delete_all(self.env, 'mailinglistmessage', row[0], db)
             cursor.execute('DELETE FROM mailinglist WHERE id = %s', (self.id,))
             cursor.execute('DELETE FROM mailinglistconversations WHERE list = %s', (self.id,))
             cursor.execute('DELETE FROM mailinglistraw WHERE list = %s', (self.id,))
@@ -535,7 +535,7 @@ class MailinglistMessage(object):
         @self.env.with_transaction(db)
         def do_delete(db):
             cursor = db.cursor()
-            Attachment.delete_all(self.env, 'mailinglistmessages', self.id, db)
+            Attachment.delete_all(self.env, 'mailinglistmessage', self.id, db)
             cursor.execute("""
             DELETE FROM mailinglistraw WHERE id IN
             (SELECT raw FROM mailinglistmessages WHERE id = %s)""", (self.id,))

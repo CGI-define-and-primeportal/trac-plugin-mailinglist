@@ -132,8 +132,8 @@ class MailinglistTestCase(unittest.TestCase):
                 assert conversation.get_first() is not None
                 for message in conversation.messages():
                     assert message
-                    for attachment in Attachment.select(self.env, 'mailinglistmessage', message.id):
-                        assert attachment
+                    #for attachment in Attachment.select(self.env, 'mailinglistmessage', message.id):
+                    #    assert attachment
 
             mailinglist.delete()
             
@@ -156,7 +156,10 @@ class MailinglistTestCase(unittest.TestCase):
                                                                         body="Need images of boats."))
         
         message = mailinglist.conversations().next().messages().next()
-        assert Attachment.select(self.env, message.resource.realm, message.resource.id).next().filename
+        attachment_path = Attachment.select(self.env, message.resource.realm, message.resource.id).next().path
+        assert os.path.exists(attachment_path)        
+        message.delete()
+        assert not os.path.exists(attachment_path)
 
     def test_add_list_member(self):
         mailinglist = Mailinglist(self.env,
