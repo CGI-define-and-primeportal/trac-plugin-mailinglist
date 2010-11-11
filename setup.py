@@ -43,12 +43,16 @@ setup(
         'htdocs/css/*.css',
         'htdocs/*.png']
     },
-    entry_points = {'trac.plugins': [
-        'mailinglistplugin.api = mailinglistplugin.api',
-        'mailinglistplugin.model = mailinglistplugin.model',
-        'mailinglistplugin.perm = mailinglistplugin.perm',
-        'mailinglistplugin.web_ui = mailinglistplugin.web_ui',        
-        ]},
+    entry_points = {
+        'define.importers': [
+            'mbox = mailinglistplugin.importers:mbox_to_mailinglist_importer',
+            ],
+        'trac.plugins': [
+            'mailinglistplugin.api = mailinglistplugin.api',
+            'mailinglistplugin.model = mailinglistplugin.model',
+            'mailinglistplugin.perm = mailinglistplugin.perm',
+                    'mailinglistplugin.web_ui = mailinglistplugin.web_ui',        
+            ]},
     install_requires = [''],
     tests_require = ['nose'],
     test_suite = 'nose.collector',
