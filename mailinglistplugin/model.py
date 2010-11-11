@@ -296,7 +296,7 @@ class Mailinglist(object):
         db = self.env.get_read_db()
         cursor = db.cursor()
         cursor.execute("""SELECT count(id) FROM mailinglistconversations
-        WHERE list = %s ORDER BY date""", (self.id,))
+        WHERE list = %s""", (self.id,))
         return cursor.fetchone()[0]
 
     def conversations(self, offset=None, limit=None):
@@ -311,7 +311,7 @@ class Mailinglist(object):
         else:
             offset_term = ""
         cursor.execute("""SELECT id FROM mailinglistconversations
-        WHERE list = %%s ORDER BY date %s %s""" % (limit_term, offset_term), (self.id,))
+        WHERE list = %%s ORDER BY date DESC %s %s""" % (limit_term, offset_term), (self.id,))
         for row in cursor:
             yield MailinglistConversation(self.env, row[0])
 
@@ -724,7 +724,7 @@ class MailinglistConversation(object):
         db = self.env.get_read_db()
         cursor = db.cursor()
         cursor.execute("""SELECT count(id) FROM mailinglistmessages
-        WHERE conversation = %s ORDER BY date""", (self.id,))
+        WHERE conversation = %s""", (self.id,))
         return cursor.fetchone()[0]
             
     def messages(self):
