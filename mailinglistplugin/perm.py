@@ -11,6 +11,8 @@ class MailinglistPermissionPolicy(Component):
         self.log.debug("Checking if %s can do %s on %s", action, username, resource)
         if action is "MAILINGLIST_VIEW":
             if resource.realm == "mailinglist":
+                if "TRAC_ADMIN" in perm:
+                    return True
                 mailinglist = Mailinglist(self.env, resource.id)
                 if mailinglist.private == False:
                     return None # it's up to the general permissions table
