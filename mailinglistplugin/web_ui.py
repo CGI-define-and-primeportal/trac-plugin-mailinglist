@@ -1,7 +1,7 @@
 from trac.mimeview.api import Mimeview, IContentConverter, Context
 from trac.core import Component, implements
 from trac.perm import IPermissionRequestor
-from trac.resource import Resource, IResourceManager, get_resource_url
+from trac.resource import Resource, IResourceManager, get_resource_url, ResourceNotFound
 from trac.config import BoolOption, IntOption, ListOption
 from trac.web.chrome import INavigationContributor, ITemplateProvider, \
                             add_stylesheet, add_link, add_ctxtnav, prevnext_nav
@@ -10,17 +10,20 @@ from trac.timeline.api import ITimelineEventProvider
 from trac.util.translation import _
 from trac.attachment import Attachment, AttachmentModule
 from trac.util.compat import any, partial
+from trac.wiki.api import IWikiSyntaxProvider
+from trac.util.datefmt import format_datetime
 
 import re
 from genshi.builder import tag
 
+from mailinglistplugin.api import MailinglistSystem
 from mailinglistplugin.model import Mailinglist, MailinglistConversation, MailinglistMessage
 from mailinglistplugin.utils import wrap_and_quote
 
 import pkg_resources
 
 class MailinglistModule(Component):
-    implements(IRequestHandler, ITemplateProvider, INavigationContributor)
+    implements(IRequestHandler, ITemplateProvider, INavigationContributor, IWikiSyntaxProvider)
 
     limit = IntOption("mailinglist", "page_size", 20,
                       "Number of conversations to show per page")
@@ -40,6 +43,36 @@ class MailinglistModule(Component):
     def get_navigation_items(self, req):
         yield ('mainnav', 'mailinglist',
                tag.a(_('Mailinglist'), href=req.href.mailinglist()))
+
+    # IWikiSyntaxProvider
+    def get_wiki_syntax(self):
+        yield (r'\bmailinglist:(?P<list_id>\d+)\b', 
+               lambda f, m, fm: self._format_link(f, 'mailinglist', 
+                                                  fm.group('list_id'), 
+                                                  m, fm))
+
+    def get_link_resolvers(self):
+        yield ('mailinglist', self._format_link)
+    
+    def _format_link(self, formatter, ns, target, label, match=None):
+        resource = Resource('mailinglist', target)
+        try:
+            instance = MailinglistSystem(self.env).get_instance_for_resource(resource)
+        except ResourceNotFound:
+            return tag.a(label, class_='missing mailinglist')
+        if isinstance(instance,Mailinglist):
+            return tag.a("Mailinglist: %s" % instance.name, href=formatter.href.mailinglist(target))
+        elif isinstance(instance,MailinglistConversation):
+            return tag.a("%s: %s" % (instance.mailinglist.name, instance.subject),
+                         href=formatter.href.mailinglist(target),
+                         title="Dated %s" % format_datetime(instance.date, tzinfo=formatter.req.tz))
+        elif isinstance(instance,MailinglistMessage):
+            return tag.a("%s: %s" % (instance.conversation.mailinglist.name, instance.subject),
+                         href=formatter.href.mailinglist(target),
+                         title="Dated %s" % format_datetime(instance.date, tzinfo=formatter.req.tz))
+        else:
+            return tag.a(label, href=formatter.href.mailinglist(target))                    
+        
 
     # IRequestHandler methods
     def match_request(self, req):
