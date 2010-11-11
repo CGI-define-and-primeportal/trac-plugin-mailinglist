@@ -7,6 +7,8 @@ from trac.web.chrome import INavigationContributor, ITemplateProvider, \
 from trac.web.main import IRequestHandler
 from trac.timeline.api import ITimelineEventProvider
 from trac.util.translation import _
+from trac.attachment import Attachment
+from trac.util.compat import any, partial
 
 import re
 from genshi.builder import tag
@@ -68,7 +70,7 @@ class MailinglistModule(Component):
         if 'conversationid' in req.args:
             conversation = MailinglistConversation(self.env, req.args['conversationid'])
             data['conversation'] = conversation
-
+            data['attachmentselect'] = partial(Attachment.select, self.env)
             add_link(req, 'up', req.href.mailinglist(conversation.mailinglist.emailaddress,offset=data['offset']),
                      _("List of conversations"))
 

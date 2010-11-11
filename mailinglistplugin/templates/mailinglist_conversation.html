@@ -22,6 +22,13 @@
 	<div py:content="message.to_header"/>
 	<div py:content="message.cc_header"/>
 	<div py:content="format_datetime(message.date)"/>
+	<ul>
+	  <li py:for="attachment in attachmentselect(message.resource.realm, message.resource.id)">
+	    <a href="${url_of(attachment.resource)}">
+	      ${attachment.filename}
+	    </a>
+	  </li>
+	</ul>
 	<py:with vars="body, quote = wrap_and_quote(message.body, 78)">
 	  <pre py:content="body"/>
 	  <div py:if="quote">
