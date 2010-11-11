@@ -446,7 +446,8 @@ class MailinglistRawMessage(object):
             row = cursor.fetchone()
             if row:
                 self.id = id
-                (mailinglistid, self.bytes) = row 
+                (mailinglistid, bytes) = row
+                self.bytes = bytes.encode('utf8') # should just be a string of bytes
                 self.mailinglist = Mailinglist(env, mailinglistid)
             else:
                 raise ResourceNotFound(_('MailinglistRawMessage %s does not exist.' % id),
@@ -526,7 +527,10 @@ class MailinglistMessage(object):
         self.from_email = from_email
         self.to_header = to_header
         self.cc_header = cc_header
-        self.raw = raw
+        if raw is None:
+            self._raw = None
+        else:
+            self._raw = raw.id
 
         if id is not None:
             row = None
@@ -538,11 +542,10 @@ class MailinglistMessage(object):
             row = cursor.fetchone()
             if row:
                 self.id = id
-                (mailinglistconversationid, mailinglistrawid, self.subject, self.body,
+                (mailinglistconversationid, self._raw, self.subject, self.body,
                  self.msg_id, date, self.from_name, self.from_email,
                  self.to_header, self.cc_header) = row 
                 self.date = datetime.fromtimestamp(date, utc)
-                self.raw = MailinglistRawMessage(env, mailinglistrawid)
                 self.conversation = MailinglistConversation(env, mailinglistconversationid)
             else:
                 raise ResourceNotFound(_('MailinglistMessage %s does not exist.' % id),
@@ -552,6 +555,21 @@ class MailinglistMessage(object):
                                                               self.conversation.id,
                                                               self.id),
                                  parent=self.conversation.resource)
+
+    def get_raw(self):
+        if self._raw is None:
+            raise ResourceNotFound("Raw not set")
+        return MailinglistRawMessage(self.env, self._raw)
+
+    def set_raw(self, raw, db=None):
+        @self.env.with_transaction(db)
+        def do_set(db):
+            cursor = db.cursor()
+            cursor.execute('UPDATE mailinglistmessages SET raw=%s WHERE id = %s',
+                           (raw.id, self.id))
+            self._raw = raw.id
+
+    raw = property(get_raw, set_raw)
         
     def __repr__(self):
         return '<%s %r: %s>' % (
@@ -588,7 +606,7 @@ class MailinglistMessage(object):
                            '(conversation, list, raw, subject, body, msg_id, '
                            'date, from_name, from_email, to_header, cc_header) '
                            ' VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)',
-                           (self.conversation.id, self.conversation.mailinglist.id, self.raw.id,
+                           (self.conversation.id, self.conversation.mailinglist.id, self._raw,
                             self.subject, self.body, self.msg_id, to_timestamp(self.date),
                             self.from_name, self.from_email, self.to_header, self.cc_header))
             self.id = db.get_last_id(cursor, 'mailinglistmessages')
@@ -609,7 +627,7 @@ class MailinglistMessage(object):
                            'subject=%s, body=%s, msg_id=%s, date=%s, '
                            'from_name=%s, from_email=%s, to_header=%s, cc_header=%s'
                            'WHERE id = %s',
-                           (self.conversation.id, self.conversation.mailinglist.id, self.raw.id,
+                           (self.conversation.id, self.conversation.mailinglist.id, self._raw,
                             self.subject, self.body, self.msg_id, to_timestamp(self.date),
                             self.from_name, self.from_email, self.to_header, self.cc_header))
 
