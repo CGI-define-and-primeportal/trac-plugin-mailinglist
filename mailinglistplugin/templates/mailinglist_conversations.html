@@ -10,13 +10,13 @@
   </head>
   <body>
     <div id="content" class="mailinglistconversations">
-      <h1>Conversations for list: ${mailinglist.name}</h1>
+      <h1>Conversations for list: ${name_of(mailinglist.resource)}</h1>
       <div><a href="mailto:${mailinglist.addr()}" py:content="mailinglist.addr()"/></div>
-      <div>${mailinglist.description}</div>
+      <div>${summary_of(mailinglist.resource)}</div>
 
       <div py:for="conversation in mailinglist.conversations(offset,limit)">
 	<div>
-	  <a href="${href.mailinglist(mailinglist.emailaddress, conversation.id, offset=offset)}">
+	  <a href="${url_of(conversation.resource, offset=offset)}">
 	    ${len(conversation.subject) and conversation.subject or 'View Conversation'}
 	  </a>
 	</div>

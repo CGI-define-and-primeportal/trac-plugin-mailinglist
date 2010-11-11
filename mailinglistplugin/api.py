@@ -16,7 +16,7 @@ from trac.db import DatabaseManager
 from trac.env import IEnvironmentSetupParticipant
 from trac.util.datefmt import from_utimestamp, to_utimestamp, utc, utcmax, format_datetime
 from trac.config import BoolOption, Option
-from trac.resource import ResourceNotFound
+from trac.resource import IResourceManager, ResourceNotFound
 import email
 from utils import decode_header
 from announcer.api import AnnouncementSystem, IAnnouncementProducer, \
@@ -64,7 +64,8 @@ class IMailinglistMessageChangeListener(Interface):
 class MailinglistSystem(Component):
     implements(IEnvironmentSetupParticipant, IPermissionRequestor,
                IMailinglistMessageChangeListener,
-               IAnnouncementProducer, IAnnouncementFormatter, IAnnouncementSubscriber)
+               IAnnouncementProducer, IAnnouncementFormatter, IAnnouncementSubscriber,
+               IResourceManager)
 
     mailinglistchange_listeners  = ExtensionPoint(IMailinglistChangeListener)
     conversationchange_listeners = ExtensionPoint(IMailinglistConversationChangeListener)
@@ -174,6 +175,51 @@ class MailinglistSystem(Component):
             for stmt in db_backend.to_sql(table):
                 self.log.debug(stmt)
                 cursor.execute(stmt)
+
+    # IResourceManager
+
+    def get_resource_realms(self):
+        yield "mailinglist"
+
+    def get_resource_url(self, resource, href, **kwargs):
+        return href.mailinglist(resource.id, **kwargs)
+        
+    def get_resource_description(self, resource, format=None, context=None,
+                                 **kwargs):
+        instance = self.get_instance_for_resource(resource)
+        if format in ("compact", "default"):
+            if hasattr(instance, "name"):
+                return instance.name
+            elif hasattr(instance, "subject"):
+                return instance.subject
+        elif format == "summary":
+            if hasattr(instance, "description"):
+                return instance.description
+            elif hasattr(instance, "subject"):
+                return instance.subject
+            
+    def resource_exists(self, resource):
+        return bool(self.get_instance_for_resource(resource))
+
+    def get_instance_for_resource(self, resource):
+        if resource.realm != "mailinglist":
+            return None
+        parts = resource.id.split("/")
+        if len(parts) == 0:
+            return None
+        elif len(parts) == 1:
+            from mailinglistplugin.model import Mailinglist
+            return Mailinglist.select_by_address(self.env, parts[0], localpart=True)
+        elif len(parts) == 2:
+            from mailinglistplugin.model import MailinglistConversation
+            return MailinglistConversation(self.env, int(parts[1]))
+        elif len(parts) == 3:
+            if parts[2] == "raw":
+                from mailinglistplugin.model import MailinglistRawMessage
+                return MailinglistRawMessage(self.env, int(parts[2]))
+            else:
+                from mailinglistplugin.model import MailinglistMessage
+                return MailinglistMessage(self.env, int(parts[2]))
     
     # IMailinglistMessageChangeListener
 

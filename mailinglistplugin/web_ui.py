@@ -1,6 +1,6 @@
 from trac.core import Component, implements
 from trac.perm import IPermissionRequestor
-from trac.resource import Resource, IResourceManager
+from trac.resource import Resource, IResourceManager, get_resource_url
 from trac.config import BoolOption, IntOption, ListOption
 from trac.web.chrome import INavigationContributor, ITemplateProvider, \
                             add_stylesheet, add_link, add_ctxtnav, prevnext_nav
@@ -72,7 +72,8 @@ class MailinglistModule(Component):
             conversation = MailinglistConversation(self.env, req.args['conversationid'])
             data['conversation'] = conversation
             data['attachmentselect'] = partial(Attachment.select, self.env)
-            add_link(req, 'up', req.href.mailinglist(conversation.mailinglist.emailaddress,offset=data['offset']),
+            add_link(req, 'up', get_resource_url(self.env, conversation.mailinglist.resource, req.href,
+                                                 offset=data['offset']),
                      _("List of conversations"))
 
             prevnext_nav(req, _("Newer conversation"), _("Older conversation"), 
@@ -86,12 +87,14 @@ class MailinglistModule(Component):
 
             if data['offset'] + data['limit'] < mailinglist.count_conversations():
                 add_link(req, 'next',
-                         req.href.mailinglist(mailinglist.emailaddress,offset=data['offset']+data['limit']),
+                         get_resource_url(self.env, mailinglist.resource, req.href,
+                                          offset=data['offset']+data['limit']),
                          _("Older conversations"))
 
             if offset > 0:
                 add_link(req, 'prev',
-                         req.href.mailinglist(mailinglist.emailaddress,offset=data['offset']-data['limit']),
+                         get_resource_url(self.env, mailinglist.resource, req.href,
+                                          offset=data['offset']-data['limit']),
                          _("Newer conversations"))
 
             add_link(req, 'up', req.href.mailinglist(), _("List of mailinglists"))

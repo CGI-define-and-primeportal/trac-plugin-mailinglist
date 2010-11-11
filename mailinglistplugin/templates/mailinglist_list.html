@@ -22,8 +22,8 @@
 	  <py:for each="mailinglist in mailinglists">
 	    <tr>
 	      <td>
-		<a href="${href.mailinglist(mailinglist.emailaddress)}" 
-		   py:content="mailinglist.name">
+		<a href="${url_of(mailinglist.resource)}" 
+		   py:content="name_of(mailinglist.resource)">
 		</a>
 	      </td>
 	      <td><a href="mailto:${mailinglist.addr()}" py:content="mailinglist.addr()"/></td>
@@ -32,6 +32,10 @@
 	    <tr>
 	      <td colspan="3">
 		<dl>
+		  <dt>Description</dt>
+		  <dd>
+		    ${summary_of(mailinglist.resource)}
+		  </dd>
 		  <dt>Access</dt>
 		  <dd>${mailinglist.private and "Private" or "Public"}</dd>
 		  <dt>Post permissions</dt>

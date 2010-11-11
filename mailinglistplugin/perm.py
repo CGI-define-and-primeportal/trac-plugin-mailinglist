@@ -1,7 +1,7 @@
 from trac.perm import IPermissionRequestor, IPermissionPolicy
 from trac.core import Component, implements, TracError, Interface, ExtensionPoint
 
-from mailinglistplugin.model import Mailinglist, MailinglistMessage
+from mailinglistplugin.api import MailinglistSystem
 
 class MailinglistPermissionPolicy(Component):
     implements(IPermissionPolicy)
@@ -10,8 +10,8 @@ class MailinglistPermissionPolicy(Component):
     def check_permission(self, action, username, resource, perm):
         if action is "ATTACHMENT_VIEW":
             self.log.debug("Deciding if %s can do %s on %s", username, action, resource)
-            if resource.parent.realm == "mailinglistmessage":
-                message = MailinglistMessage(self.env, resource.parent.id)
+            if resource.parent.realm == "mailinglist":
+                message = MailinglistSystem(self.env).get_instance_for_resource(resource.parent)
                 return "MAILINGLIST_VIEW" in perm(message.conversation.mailinglist.resource)
 
         elif action is "MAILINGLIST_VIEW":
@@ -19,7 +19,7 @@ class MailinglistPermissionPolicy(Component):
             if resource.realm == "mailinglist":
                 if "TRAC_ADMIN" in perm:
                     return True
-                mailinglist = Mailinglist(self.env, resource.id)
+                mailinglist = MailinglistSystem(self.env).get_instance_for_resource(resource)
                 if mailinglist.private == False:
                     return None # it's up to the general permissions table
                 elif mailinglist.private == True:
@@ -31,7 +31,7 @@ class MailinglistPermissionPolicy(Component):
                 # In general, people can post...
                 return True
             if resource.realm == "mailinglist":
-                mailinglist = Mailinglist(self.env, resource.id)
+                mailinglist = MailinglistSystem(self.env).get_instance_for_resource(resource)
                 if mailinglist.postperm == "OPEN":
                     return True
                 elif mailinglist.postperm == "RESTRICTED":

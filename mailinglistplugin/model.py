@@ -57,7 +57,7 @@ class Mailinglist(object):
             else:
                 raise ResourceNotFound(_('Mailinglist %s does not exist.' % id),
                                        _('Invalid Mailinglist Number'))
-        self.resource = Resource('mailinglist', self.id)
+        self.resource = Resource('mailinglist', self.emailaddress)
         
     def __repr__(self):
         return '<%s %r: %s>' % (
@@ -104,7 +104,7 @@ class Mailinglist(object):
 
         for listener in MailinglistSystem(self.env).mailinglistchange_listeners:
             listener.mailinglist_created(self)
-        self.resource = Resource('mailinglist', self.id)            
+
         return self.id
 
     def save_changes(self, db=None):
@@ -204,7 +204,7 @@ class Mailinglist(object):
                 
             mime_type = part.get_content_type()
             description = decode_header(part.get('content-description',''))
-            attachment = Attachment(self.env, 'mailinglistmessage', m.id)
+            attachment = Attachment(self.env, m.resource.realm, m.resource.id)
             attachmentbytes = part.get_payload(decode=True)
             attachment.insert(filename, StringIO(attachmentbytes), len(attachmentbytes))
         
@@ -451,7 +451,8 @@ class MailinglistRawMessage(object):
             else:
                 raise ResourceNotFound(_('MailinglistRawMessage %s does not exist.' % id),
                                        _('Invalid Mailinglist Raw Message Number'))
-        self.resource = Resource('mailinglistrawmessage', self.id,
+        self.resource = Resource('mailinglist', "%s/raw/%s" % (self.mailinglist.emailaddress,
+                                                               self.id),
                                  parent=self.mailinglist.resource)
         
     def __repr__(self):
@@ -482,7 +483,8 @@ class MailinglistRawMessage(object):
                            ' VALUES (%s, %s)',
                            (self.mailinglist.id, self.bytes))
             self.id = db.get_last_id(cursor, 'mailinglistraw')
-        self.resource = Resource('mailinglistrawmessage', self.id,
+        self.resource = Resource('mailinglist', "%s/raw/%s" % (self.mailinglist.emailaddress,
+                                                               self.id),
                                  parent=self.mailinglist.resource)
         return self.id
 
@@ -546,7 +548,9 @@ class MailinglistMessage(object):
                 raise ResourceNotFound(_('MailinglistMessage %s does not exist.' % id),
                                        _('Invalid Mailinglist Message Number'))
             
-        self.resource = Resource('mailinglistmessage', self.id,
+        self.resource = Resource('mailinglist', "%s/%s/%s" % (self.conversation.mailinglist.emailaddress,
+                                                              self.conversation.id,
+                                                              self.id),
                                  parent=self.conversation.resource)
         
     def __repr__(self):
@@ -566,7 +570,7 @@ class MailinglistMessage(object):
         @self.env.with_transaction(db)
         def do_delete(db):
             cursor = db.cursor()
-            Attachment.delete_all(self.env, 'mailinglistmessage', self.id, db)
+            Attachment.delete_all(self.env, self.resource.realm, self.resource.id, db)
             cursor.execute("""
             DELETE FROM mailinglistraw WHERE id IN
             (SELECT raw FROM mailinglistmessages WHERE id = %s)""", (self.id,))
@@ -591,8 +595,10 @@ class MailinglistMessage(object):
             
         for listener in MailinglistSystem(self.env).messagechange_listeners:
             listener.mailinglistmessage_created(self)
-        self.resource = Resource('mailinglistmessage', self.id,
-                                 parent=self.conversation.resource)
+        self.resource = Resource('mailinglist', "%s/%s/%s" % (self.conversation.mailinglist.emailaddress,
+                                                              self.conversation.id,
+                                                              self.id),
+                                 parent=self.conversation.resource)                                 
         return self.id
 
     def save_changes(self, db=None):
@@ -642,7 +648,8 @@ class MailinglistConversation(object):
             else:
                 raise ResourceNotFound(_('MailinglistConversation %s does not exist.' % id),
                                        _('Invalid Mailinglist Conversation Number'))
-        self.resource = Resource('mailinglistconversation', self.id,
+        self.resource = Resource('mailinglist', "%s/%s" % (self.mailinglist.emailaddress,
+                                                           self.id),
                                  parent=self.mailinglist.resource)
         
     def __repr__(self):
@@ -661,10 +668,15 @@ class MailinglistConversation(object):
         """Delete a mailinglistconversation"""
         @self.env.with_transaction(db)
         def do_delete(db):
+            # could implement the message deleting part by
+            # instantiating and calling delete() on each,
+            # but that sounds pretty slower.
             cursor = db.cursor()
             cursor.execute('SELECT id FROM mailinglistmessages WHERE conversation = %s', (self.id,))
             for row in cursor:
-                Attachment.delete_all(self.env, 'mailinglistmessages', row[0], db)
+                Attachment.delete_all(self.env, self.resource.realm, "%s/%d/%d" % (self.mailinglist.emailaddress,
+                                                                                   self.id,
+                                                                                   row[0]), db)
             cursor.execute('DELETE FROM mailinglistconversations WHERE id = %s', (self.id,))
             cursor.execute("""
             DELETE FROM mailinglistraw WHERE id IN
@@ -687,7 +699,8 @@ class MailinglistConversation(object):
 
         for listener in MailinglistSystem(self.env).conversationchange_listeners:
             listener.mailinglistconversation_created(self)
-        self.resource = Resource('mailinglistconversation', self.id,
+        self.resource = Resource('mailinglist', "%s/%s" % (self.mailinglist.emailaddress,
+                                                           self.id),
                                  parent=self.mailinglist.resource)
         return self.id
 
