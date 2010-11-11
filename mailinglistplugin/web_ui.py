@@ -1,3 +1,4 @@
+from trac.mimeview.api import Mimeview, IContentConverter, Context
 from trac.core import Component, implements
 from trac.perm import IPermissionRequestor
 from trac.resource import Resource, IResourceManager, get_resource_url
@@ -7,13 +8,13 @@ from trac.web.chrome import INavigationContributor, ITemplateProvider, \
 from trac.web.main import IRequestHandler
 from trac.timeline.api import ITimelineEventProvider
 from trac.util.translation import _
-from trac.attachment import Attachment
+from trac.attachment import Attachment, AttachmentModule
 from trac.util.compat import any, partial
 
 import re
 from genshi.builder import tag
 
-from mailinglistplugin.model import Mailinglist, MailinglistConversation
+from mailinglistplugin.model import Mailinglist, MailinglistConversation, MailinglistMessage
 from mailinglistplugin.utils import wrap_and_quote
 
 import pkg_resources
@@ -49,6 +50,9 @@ class MailinglistModule(Component):
             match = re.match(r'/mailinglist/[^/]+/([0-9]+)$', req.path_info)
             if match:
                 req.args['conversationid'] = match.group(1)
+            match = re.match(r'/mailinglist/[^/]+/[0-9]+/([0-9]+)$', req.path_info)
+            if match:
+                req.args['messageid'] = match.group(1)
             return True
 
     def process_request(self, req):
@@ -67,7 +71,38 @@ class MailinglistModule(Component):
         #    add_ctxtnav(req,
         #                _("List: %s") % mailinglist.name,
         #                req.href.mailinglist(mailinglist.emailaddress))
+        
+        if 'messageid' in req.args:
+            message = MailinglistMessage(self.env, req.args['messageid'])
 
+            if req.args.get('format') == "raw":
+                req.send_header('Content-Disposition', 'attachment')
+                req.send_response(200)
+                content = message.raw.bytes
+                req.send_header('Content-Type', 'application/mbox')
+                req.send_header('Content-Length', len(content))
+                req.end_headers()
+                if req.method != 'HEAD':
+                    req.write(content)
+                return
+
+            context = Context.from_request(req, message.resource)
+            
+            data['message'] = message
+            data['attachments'] = AttachmentModule(self.env).attachment_data(context)
+
+            add_link(req, 'up', get_resource_url(self.env, message.conversation.resource, req.href,
+                                                 offset=data['offset']),
+                     _("Back to conversation"))
+
+            prevnext_nav(req, _("Newer message"), _("Older message"), 
+                         _("Back to conversation"))
+
+            raw_href = get_resource_url(self.env, message.resource,
+                                        req.href, format='raw')
+            add_link(req, 'alternate', raw_href, _('mbox'), "application/mbox")
+            return 'mailinglist_message.html', data, None
+            
         if 'conversationid' in req.args:
             conversation = MailinglistConversation(self.env, req.args['conversationid'])
             data['conversation'] = conversation

@@ -18,7 +18,11 @@
       </div>
 
       <div py:for="message in conversation.messages()">
-	<div py:content="message.subject"/>
+	<div>
+	  <a href="${url_of(message.resource, offset=offset)}">
+	    ${len(message.subject) and message.subject or 'View Message'}
+	  </a>
+	</div>
 	<div py:content="message.to_header"/>
 	<div py:content="message.cc_header"/>
 	<div py:content="format_datetime(message.date)"/>
