@@ -14,9 +14,9 @@
       <div><a href="mailto:${mailinglist.addr()}" py:content="mailinglist.addr()"/></div>
       <div>${mailinglist.description}</div>
 
-      <div py:for="conversation in mailinglist.conversations()">
+      <div py:for="conversation in mailinglist.conversations(offset,limit)">
 	<div>
-	  <a href="${href.mailinglist(mailinglist.emailaddress, conversation.id)}">
+	  <a href="${href.mailinglist(mailinglist.emailaddress, conversation.id, offset=offset)}">
 	    ${len(conversation.subject) and conversation.subject or 'View Conversation'}
 	  </a>
 	  </div>
