@@ -19,7 +19,7 @@
 	  <a href="${href.mailinglist(mailinglist.emailaddress, conversation.id, offset=offset)}">
 	    ${len(conversation.subject) and conversation.subject or 'View Conversation'}
 	  </a>
-	  </div>
+	</div>
 	<div py:content="format_datetime(conversation.date)"/>
 	<div>${conversation.count_messages()} message(s)</div>
 	<div py:content="conversation.get_first().body.lstrip()[:300]"/>
