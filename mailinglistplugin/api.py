@@ -199,7 +199,10 @@ class MailinglistSystem(Component):
                 return instance.subject
             
     def resource_exists(self, resource):
-        return bool(self.get_instance_for_resource(resource))
+        try:
+            return bool(self.get_instance_for_resource(resource))
+        except ResourceNotFound:
+            return False
 
     def get_instance_for_resource(self, resource):
         if resource.realm != "mailinglist":
