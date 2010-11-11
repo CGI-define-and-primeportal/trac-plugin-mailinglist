@@ -20,6 +20,9 @@ class mbox_to_mailinglist_importer:
         mailinglist_name = os.path.basename(sourcepath.rstrip("/"))
         env = open_environment(env_path)
 
+        #mailinglist = Mailinglist.select_by_address(env, mailinglist_name, localpart=True)
+        #mailinglist.delete()
+
         try:
             mailinglist = Mailinglist.select_by_address(env, mailinglist_name, localpart=True)
         except ResourceNotFound:
