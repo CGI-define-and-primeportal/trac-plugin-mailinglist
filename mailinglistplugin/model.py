@@ -205,7 +205,7 @@ class Mailinglist(object):
             mime_type = part.get_content_type()
             description = decode_header(part.get('content-description',''))
             attachment = Attachment(self.env, 'mailinglistmessage', m.id)
-            attachmentbytes = part.get_payload()
+            attachmentbytes = part.get_payload(decode=True)
             attachment.insert(filename, StringIO(attachmentbytes), len(attachmentbytes))
         
         return m
