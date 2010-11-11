@@ -21,7 +21,8 @@ import pkg_resources
 class MailinglistModule(Component):
     implements(IRequestHandler, ITemplateProvider, INavigationContributor)
 
-    limit = IntOption("mailinglist","page_size",20,"Number of conversations to show per page")
+    limit = IntOption("mailinglist", "page_size", 20,
+                      "Number of conversations to show per page")
     
     # ITemplateProvider methods
 
