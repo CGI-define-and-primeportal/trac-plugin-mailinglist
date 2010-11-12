@@ -11,8 +11,7 @@ class MailinglistPermissionPolicy(Component):
         if action is "ATTACHMENT_VIEW":
             self.log.debug("Deciding if %s can do %s on %s", username, action, resource)
             if resource.parent.realm == "mailinglist":
-                message = MailinglistSystem(self.env).get_instance_for_resource(resource.parent)
-                return "MAILINGLIST_VIEW" in perm(message.conversation.mailinglist.resource)
+                return "MAILINGLIST_VIEW" in perm(resource.parent)
 
         elif action is "MAILINGLIST_VIEW":
             self.log.debug("Deciding if %s can do %s on %s", username, action, resource)
