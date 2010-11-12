@@ -181,6 +181,18 @@ class Mailinglist(object):
         if not from_name: 
             from_name = from_email
 
+        db = self.env.get_read_db()
+        cursor = db.cursor()
+        cursor.execute('SELECT sid '
+                       'FROM session_attribute '
+                       'WHERE value = %s '
+                       'AND name = \'email\' AND authenticated = 1 LIMIT 1', (from_email,))
+        row = cursor.fetchone()
+        if row is not None:
+            trac_username = row[0]
+        else:
+            trac_username = from_email
+
         to = decode_header(msg['to'])
         cc = decode_header(msg['cc'])
 
@@ -206,6 +218,7 @@ class Mailinglist(object):
             description = decode_header(part.get('content-description',''))
             attachment = Attachment(self.env, m.resource.realm, m.resource.id)
             attachmentbytes = part.get_payload(decode=True)
+            attachment.author = trac_username
             attachment.insert(filename, StringIO(attachmentbytes), len(attachmentbytes))
         
         return m
