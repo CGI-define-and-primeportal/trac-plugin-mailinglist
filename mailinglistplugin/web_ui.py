@@ -11,7 +11,8 @@ from trac.util.translation import _
 from trac.attachment import Attachment, AttachmentModule
 from trac.util.compat import any, partial
 from trac.wiki.api import IWikiSyntaxProvider
-from trac.util.datefmt import format_datetime
+from trac.util.datefmt import format_datetime, from_utimestamp
+from trac.search import ISearchSource, search_to_sql, shorten_result
 
 import re
 from genshi.builder import tag
@@ -23,7 +24,8 @@ from mailinglistplugin.utils import wrap_and_quote
 import pkg_resources
 
 class MailinglistModule(Component):
-    implements(IRequestHandler, ITemplateProvider, INavigationContributor, IWikiSyntaxProvider)
+    implements(IRequestHandler, ITemplateProvider, INavigationContributor,
+               IWikiSyntaxProvider, ISearchSource)
 
     limit = IntOption("mailinglist", "page_size", 20,
                       "Number of conversations to show per page")
@@ -72,6 +74,53 @@ class MailinglistModule(Component):
                          title="Dated %s" % format_datetime(instance.date, tzinfo=formatter.req.tz))
         else:
             return tag.a(label, href=formatter.href.mailinglist(target))                    
+
+    # ISearchSource methods
+
+    def get_search_filters(self, req):
+        if 'MAILINGLIST_VIEW' in req.perm:
+            yield ('mailinglist', _("Mailinglist"))
+
+    def get_search_results(self, req, terms, filters):
+        if not 'mailinglist' in filters:
+            return
+        mailinglist_realm = Resource('mailinglist')
+
+        lists = {}
+        for mailinglist in Mailinglist.select(self.env):
+            if "MAILINGLIST_VIEW" in req.perm(mailinglist.resource):         
+                lists[mailinglist.id] = mailinglist
+                
+        if not lists:
+            self.log.debug("This user can't view any lists, so not searching.")
+            return
+        
+        db = self.env.get_read_db()
+        sql, args = search_to_sql(db, ['subject','body','from_email','from_name'], terms)
+
+        cursor = db.cursor()
+        query = """
+            SELECT id, subject, body, from_name, from_email, date, list, conversation
+            FROM mailinglistmessages
+            WHERE list IN (%s) AND %s
+            """ % (",".join(map(str,lists.keys())), sql,)
+        self.log.debug("Search query: %s", query)
+        cursor.execute(query, args)
+        for mid, subject, body, from_name, from_email, date, mlist, conversation in cursor:
+            # build resource ourself to speed things up
+            m = mailinglist_realm(id="%s/%d/%d" % (lists[mlist].emailaddress,
+                                                   conversation,
+                                                   mid))
+            if 'MAILINGLIST_VIEW' in req.perm(m):
+                yield (req.href.mailinglist(m.id),
+                       tag("%s: %s" % (lists[mlist].name, subject)),
+                       from_utimestamp(date), "%s <%s>" % (from_name, from_email),
+                       shorten_result(body, terms))
+        
+        # Attachments
+        for result in AttachmentModule(self.env).get_search_results(
+            req, mailinglist_realm, terms):
+            yield result        
         
 
     # IRequestHandler methods
