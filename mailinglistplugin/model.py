@@ -299,21 +299,34 @@ class Mailinglist(object):
         WHERE list = %s""", (self.id,))
         return cursor.fetchone()[0]
 
-    def conversations(self, offset=None, limit=None):
+    def conversations(self, offset=None, limit=None, desc=True):
         db = self.env.get_read_db()
         cursor = db.cursor()
-        if limit:
-            limit_term = "LIMIT %d" % limit
-        else:
-            limit_term = ""
-        if offset:
-            offset_term = "OFFSET %d" % offset
-        else:
-            offset_term = ""
+        offset_term = offset and "OFFSET %d" % offset or ""
+        limit_term = limit and "LIMIT %d" % limit or ""
+        desc_term = desc and "DESC" or ""
         cursor.execute("""SELECT id FROM mailinglistconversations
-        WHERE list = %%s ORDER BY date DESC %s %s""" % (limit_term, offset_term), (self.id,))
+        WHERE list = %%s ORDER BY date %s %s %s""" % (desc_term, limit_term, offset_term), (self.id,))
         for row in cursor:
             yield MailinglistConversation(self.env, row[0])
+
+    def count_messages(self):
+        db = self.env.get_read_db()
+        cursor = db.cursor()
+        cursor.execute("""SELECT count(id) FROM mailinglistmessages
+        WHERE list = %s""", (self.id,))
+        return cursor.fetchone()[0]
+            
+    def messages(self, offset=None, limit=None, desc=False):
+        db = self.env.get_read_db()
+        cursor = db.cursor()
+        offset_term = offset and "OFFSET %d" % offset or ""
+        limit_term = limit and "LIMIT %d" % limit or ""
+        desc_term = desc and "DESC" or ""
+        cursor.execute("""SELECT id FROM mailinglistmessages
+        WHERE list = %%s ORDER BY date %s %s %s""" % (desc_term, limit_term, offset_term), (self.id,))
+        for row in cursor:
+            yield MailinglistMessage(self.env, row[0])
 
     def is_subscribed(self, username):
         subscribers = self.subscribers()
@@ -758,10 +771,13 @@ class MailinglistConversation(object):
         WHERE conversation = %s""", (self.id,))
         return cursor.fetchone()[0]
             
-    def messages(self):
+    def messages(self, offset=None, limit=None, desc=False):
         db = self.env.get_read_db()
         cursor = db.cursor()
+        offset_term = offset and "OFFSET %d" % offset or ""
+        limit_term = limit and "LIMIT %d" % limit or ""
+        desc_term = desc and "DESC" or ""
         cursor.execute("""SELECT id FROM mailinglistmessages
-        WHERE conversation = %s ORDER BY date""", (self.id,))
+        WHERE conversation = %%s ORDER BY date %s %s %s""" % (desc_term, limit_term, offset_term), (self.id,))
         for row in cursor:
             yield MailinglistMessage(self.env, row[0])
