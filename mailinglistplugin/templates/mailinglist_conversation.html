@@ -13,32 +13,35 @@
       <h1>Conversation:  ${conversation.subject}</h1>
 
       <div>
-	<a href="mailto:${conversation.mailinglist.addr()}"
+	<a href="mailto:${conversation.mailinglist.addr()}" style="font-family: courier;" 
 	   py:content="conversation.mailinglist.addr()"/>
       </div>
 
-      <div py:for="message in conversation.messages()">
-	<div>
-	  <a href="${url_of(message.resource, offset=offset)}">
-	    ${len(message.subject) and message.subject or 'View Message'}
-	  </a>
-	</div>
-	<div py:content="message.to_header"/>
-	<div py:content="message.cc_header"/>
-	<div py:content="format_datetime(message.date)"/>
-	<ul>
-	  <li py:for="attachment in attachmentselect(message.resource.realm, message.resource.id)">
-	    <a href="${url_of(attachment.resource)}">
-	      ${attachment.filename}
+      <div class="conversations">
+	<div class="conversation" py:for="message in conversation.messages()">
+	  <div class="subject">
+	    <a href="${url_of(message.resource, offset=offset)}">
+	      ${len(message.subject) and message.subject or 'View Message'}
 	    </a>
-	  </li>
-	</ul>
-	<py:with vars="body, quote = wrap_and_quote(message.body, 78)">
-	  <pre py:content="body"/>
-	  <div py:if="quote">
-	    <pre py:content="quote"/>
 	  </div>
-	</py:with>
+	  <div class="to">To: ${message.to_header}</div>
+	  <div class="cc">CC: ${message.cc_header}</div>
+	  <div class="date">Date: ${format_datetime(message.date)}</div>
+	  <ul>
+	    <li py:for="attachment in attachmentselect(message.resource.realm, message.resource.id)">
+	      <a href="${url_of(attachment.resource)}">
+		${attachment.filename}
+	      </a>
+	    </li>
+	  </ul>
+	  <py:with vars="body, quote = message.split_body">
+	    <pre py:content="body"/>
+	    <div py:if="quote">
+	      <a href="#" class="morebody">(More)</a>
+	      <pre py:content="quote" class="hidden"/>
+	    </div>
+	  </py:with>
+	</div>
       </div>
     </div>
   </body>

@@ -9,19 +9,17 @@
     <title>Mailinglists Message: ${message.subject}</title>
   </head>
   <body>
-    <div id="content" class="mailinglistmessage">
+    <div id="content" class="conversation">
       <h1>${message.subject}</h1>
 
-      <div py:content="message.subject"/>
-      <div py:content="message.to_header"/>
-      <div py:content="message.cc_header"/>
-      <div py:content="format_datetime(message.date)"/>
-
-      <py:with vars="body, quote = wrap_and_quote(message.body, 78)">
+      <div class="subject" py:content="message.subject"/>
+      <div class="to">To: ${message.to_header}</div>
+      <div class="cc">CC: ${message.cc_header}</div>
+      <div class="date">Date: ${format_datetime(message.date)}</div>
+      
+      <py:with vars="body, quote = message.split_body">
 	<pre py:content="body"/>
-	<div py:if="quote">
-	  <pre py:content="quote"/>
-	</div>
+	<pre py:content="quote"/>
       </py:with>
 
       <xi:include href="list_of_attachments.html"

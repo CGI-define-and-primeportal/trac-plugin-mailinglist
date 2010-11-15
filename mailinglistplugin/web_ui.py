@@ -20,7 +20,6 @@ from genshi.builder import tag
 
 from mailinglistplugin.api import MailinglistSystem
 from mailinglistplugin.model import Mailinglist, MailinglistConversation, MailinglistMessage
-from mailinglistplugin.utils import wrap_and_quote
 
 import pkg_resources
 
@@ -149,8 +148,7 @@ class MailinglistModule(Component):
 
         data = {"mailinglists": mailinglists,
                 "offset": offset,
-                "limit": self.limit,
-                "wrap_and_quote": wrap_and_quote}
+                "limit": self.limit}
 
         #for mailinglist in mailinglists:
         #    add_ctxtnav(req,

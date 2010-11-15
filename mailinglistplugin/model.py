@@ -9,7 +9,7 @@ from trac.util.translation import _
 from datetime import datetime
 from cStringIO import StringIO
 
-from utils import parse_rfc2822_date, decode_header
+from mailinglistplugin.utils import wrap_and_quote, parse_rfc2822_date, decode_header
 import codecs
 
 import email
@@ -631,6 +631,10 @@ class MailinglistMessage(object):
 
     exists = property(__nonzero__)
 
+    def get_split_body(self):
+        return wrap_and_quote(self.body, 78)
+    split_body = property(get_split_body)
+    
     def delete(self, db=None):
         """Delete a mailinglistmessage"""
         @self.env.with_transaction(db)
