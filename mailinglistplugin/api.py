@@ -72,7 +72,7 @@ class MailinglistSystem(Component):
     messagechange_listeners      = ExtensionPoint(IMailinglistMessageChangeListener)
 
 
-    email_domain = Option('discussion', 'email_domain', '',
+    email_domain = Option('mailinglist', 'email_domain', '',
       'Domain to show in the inbound email addresses.')
 
     # IPermissionRequestor methods
