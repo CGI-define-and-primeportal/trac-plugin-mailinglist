@@ -17,6 +17,9 @@ def wrap_and_quote(text, width):
         idx = text.find('-----Original Message-----\nFr')
     if idx == -1:
         idx = text.find('-----Ursprungligt meddelande-----\nFr')
+    if idx == -1:
+        idx = text.find('Please help Logica to respect the environment by not printing this email')
+        
     if idx > 20:
         return wrap(text[:idx], width), wrap(text[idx:], width)
     else:
