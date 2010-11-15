@@ -90,6 +90,13 @@ class Mailinglist(object):
         for listener in MailinglistSystem(self.env).mailinglistchange_listeners:
             listener.mailinglist_deleted(self)
 
+
+    def _validate_options(self):
+        if self.postperm not in ("MEMBERS","RESTRICTED","OPEN"):
+            raise KeyError("%s is not a valid post permission" % self.postperm)
+        if self.replyto not in ("LIST","SENDER"):
+            raise KeyError("%s is not a valid reply-to option" % self.replyto) 
+        
     def insert(self, db=None):
         """Add new mailinglist."""
         @self.env.with_transaction(db)
@@ -108,6 +115,7 @@ class Mailinglist(object):
         return self.id
 
     def save_changes(self, db=None):
+        self._validate_options()
         @self.env.with_transaction(db)
         def do_save(db):
             cursor = db.cursor()
@@ -340,6 +348,20 @@ class Mailinglist(object):
         WHERE list = %%s ORDER BY date %s %s %s""" % (desc_term, limit_term, offset_term), (self.id,))
         for row in cursor:
             yield MailinglistMessage(self.env, row[0])
+
+    def update_poster(self, user=None, group=None, poster=False, db=None):
+        if user:
+            @self.env.with_transaction(db)
+            def do_set(db):
+                cursor = db.cursor()
+                cursor.execute("""UPDATE mailinglistusersubscription
+                SET poster = %s WHERE username = %s""", (poster and 1 or 0, user))
+        elif group:
+            @self.env.with_transaction(db)
+            def do_set(db):
+                cursor = db.cursor()
+                cursor.execute("""UPDATE mailinglistgroupsubscription
+                SET poster = %s WHERE groupname = %s""", (poster and 1 or 0, group))
 
     def is_subscribed(self, username):
         subscribers = self.subscribers()

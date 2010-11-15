@@ -49,6 +49,7 @@ setup(
             ],
         'trac.plugins': [
             'mailinglistplugin.api = mailinglistplugin.api',
+            'mailinglistplugin.admin = mailinglistplugin.admin',            
             'mailinglistplugin.model = mailinglistplugin.model',
             'mailinglistplugin.perm = mailinglistplugin.perm',
             'mailinglistplugin.web_ui = mailinglistplugin.web_ui',
