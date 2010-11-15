@@ -46,11 +46,11 @@
 		  <label>Access: <br/>
 		  <select name="private">
 		    <option value="PUBLIC" 
-			    selected="${mailinglist.private == 'PUBLIC' and 'selected' or None}">
+			    selected="${not mailinglist.private and 'selected' or None}">
 		      Public: Open to non-members
 		    </option>
 		    <option value="PRIVATE" 
-			    selected="${mailinglist.private == 'PRIVATE' and 'selected' or None}">
+			    selected="${mailinglist.private and 'selected' or None}">
 		      Private: Mailinglist members only
 		    </option>
 		  </select>
@@ -113,7 +113,7 @@
 		  <input type="submit" name="subscribegroup" value="${_('Subscribe Group')}"/>
 		</div>
 	      </form>
-	      <form id="subscribers_groupss_table" method="post" action="">
+	      <form id="subscribers_groups_table" method="post" action="">
 		<table class="listing">
 		  <thead>
 		    <tr>
