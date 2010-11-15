@@ -4,7 +4,8 @@ from trac.perm import IPermissionRequestor
 from trac.resource import Resource, IResourceManager, get_resource_url, ResourceNotFound
 from trac.config import BoolOption, IntOption, ListOption
 from trac.web.chrome import INavigationContributor, ITemplateProvider, \
-                            add_stylesheet, add_link, add_ctxtnav, prevnext_nav
+                            add_stylesheet, add_javascript, add_link, \
+                            add_ctxtnav, prevnext_nav, add_notice
 from trac.web.main import IRequestHandler
 from trac.timeline.api import ITimelineEventProvider
 from trac.util.translation import _
@@ -138,9 +139,11 @@ class MailinglistModule(Component):
             return True
 
     def process_request(self, req):
-
         offset = int(req.args.get("offset",0))
-        
+
+        add_stylesheet(req, 'mailinglist/css/mailinglist.css')
+        add_javascript(req, 'mailinglist/mailinglist.js')
+            
         mailinglists = [m for m in Mailinglist.select(self.env)
                         if "MAILINGLIST_VIEW" in req.perm(m.resource)]
 
@@ -221,5 +224,16 @@ class MailinglistModule(Component):
 
             return 'mailinglist_conversations.html', data, None
         else:
+            if req.method == 'POST':
+                mailinglist = Mailinglist.select_by_address(self.env,
+                                                            req.args['listemailaddress'], localpart=True)
+                if req.args.get('unsubscribe'):
+                    mailinglist.unsubscribe(user=req.authname)
+                    add_notice(req, _('You have been unsubscribed from %s.' % mailinglist.name))
+                elif req.args.get('subscribe'):
+                    mailinglist.subscribe(user=req.authname)
+                    add_notice(req, _('You have been subscribed to %s.' % mailinglist.name))
+                req.redirect(req.href.mailinglist())
+                
             return 'mailinglist_list.html', data, None
     

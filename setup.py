@@ -40,6 +40,7 @@ setup(
     packages = ['mailinglistplugin'],
     package_data = {'mailinglistplugin': [
         'templates/*.html',
+        'htdocs/*.js',
         'htdocs/css/*.css',
         'htdocs/*.png']
     },
