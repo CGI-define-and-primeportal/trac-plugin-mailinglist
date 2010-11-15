@@ -225,6 +225,7 @@ class MailinglistModule(Component):
             if req.method == 'POST':
                 mailinglist = Mailinglist.select_by_address(self.env,
                                                             req.args['listemailaddress'], localpart=True)
+                req.perm(mailinglist.resource).require("MAILINGLIST_VIEW")
                 if req.args.get('unsubscribe'):
                     mailinglist.unsubscribe(user=req.authname)
                     add_notice(req, _('You have been unsubscribed from %s.' % mailinglist.name))
