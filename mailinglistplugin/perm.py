@@ -22,7 +22,7 @@ class MailinglistPermissionPolicy(Component):
             self.log.debug("Deciding if %s can do %s on %s", username, action, resource)
             # if no resource, then it's no to the general permissions table
             if resource and resource.realm == "mailinglist":
-                if "TRAC_ADMIN" in perm:
+                if perm and "TRAC_ADMIN" in perm:
                     return True
                 instance = MailinglistSystem(self.env).get_instance_for_resource(resource)
                 if isinstance(instance, MailinglistMessage):
