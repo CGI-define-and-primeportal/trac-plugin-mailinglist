@@ -10,7 +10,8 @@
   </head>
   <body>
     <div id="content" class="mailinglistconversation">
-      <h1>Conversation:  ${conversation.subject}</h1>
+      <h1>Conversation:  ${conversation.subject} (${ngettext('%(num)d message', '%(num)d messages', num=conversation.count_messages())})</h1>
+	      
 
       <div>
 	<a href="mailto:${conversation.mailinglist.addr()}" style="font-family: courier;" 
