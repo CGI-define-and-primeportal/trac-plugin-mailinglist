@@ -42,7 +42,7 @@ class MailinglistPermissionPolicy(Component):
                 # In general, people can post...
                 return True
             if resource.realm == "mailinglist":
-                if "TRAC_ADMIN" in perm:
+                if perm and "TRAC_ADMIN" in perm:
                     return True
                 instance = MailinglistSystem(self.env).get_instance_for_resource(resource)
                 if isinstance(instance, MailinglistMessage):
