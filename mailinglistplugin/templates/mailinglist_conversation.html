@@ -25,7 +25,8 @@
 	    </a>
 	  </div>
 	  <div class="to">To: ${message.to_header}</div>
-	  <div class="cc">CC: ${message.cc_header}</div>
+	  <div class="cc" py:if="message.cc_header">CC: ${message.cc_header}</div>
+	  <div class="from">From: ${message.from_name} &lt;<a href="mailto:${message.from_email}" py:content="message.from_email"/>&gt;</div>
 	  <div class="date">Date: ${format_datetime(message.date)}</div>
 	  <ul>
 	    <li py:for="attachment in attachmentselect(message.resource.realm, message.resource.id)">
