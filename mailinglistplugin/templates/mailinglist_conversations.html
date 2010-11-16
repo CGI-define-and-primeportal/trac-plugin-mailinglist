@@ -1,0 +1,37 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:py="http://genshi.edgewall.org/"
+      xmlns:xi="http://www.w3.org/2001/XInclude">
+  <xi:include href="layout.html" />
+  <xi:include href="macros.html" />
+  <head>
+    <title>Mailinglists Conversations</title>
+  </head>
+  <body>
+    <div id="content" class="mailinglistconversations">
+      <h1>Conversations for list: ${name_of(mailinglist.resource)}</h1>
+      <div>
+      <a href="mailto:${mailinglist.addr()}" style="font-family: courier;" py:content="mailinglist.addr()"/>
+      </div>
+      <div>${summary_of(mailinglist.resource)}</div>
+
+      <div class="conversations">
+	<div class="conversation" py:for="conversation in mailinglist.conversations(offset,limit)">
+	  <div class="subject">
+	    <a href="${url_of(conversation.resource, offset=offset)}">
+	      ${len(conversation.subject) and conversation.subject or 'View Conversation'}
+	    </a>
+	  </div>
+	  <div class="conversationinfo">
+	    <span class="count">
+	      ${ngettext('%(num)d message', '%(num)d messages', num=conversation.count_messages())}
+	    </span>
+	    <span class="date" py:content="format_datetime(conversation.date)"/>
+	  </div>
+	  <div class="quote" py:content="conversation.get_first().body.lstrip()[:300]"/>
+	</div>
+      </div>
+    </div>
+  </body>
+</html>
