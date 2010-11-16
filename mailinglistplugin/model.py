@@ -142,7 +142,11 @@ class Mailinglist(object):
         raw.insert()
 
         msg_id = msg['message-id']
+        if msg_id:
+            msg_id = msg_id.strip()
         references = msg['references']
+        if references:
+            references = references.strip()
         in_reply_to = msg['in-reply-to']
         if msg['date']:
             date = parse_rfc2822_date(msg['date'])
@@ -232,24 +236,25 @@ class Mailinglist(object):
         return m
         
 
-    def get_conv(self, msg, in_reply_to, subject, date):
+    def get_conv(self, msg, in_reply_tos, subject, date):
         """
         Returns the `MailinglistConversation` the msg belongs to. If the message is the
         first message in a conversation or if the conversation is unknown
         a newly created conversation is returned.
         """
-        match = re.search('<[^>]+>', in_reply_to)
-        if match:
-            msg_id = match.group(0)
-            self.env.log.debug("Searching for message with msg_id %s", msg_id)
-            db = self.env.get_read_db()
-            cursor = db.cursor()
-            cursor.execute('SELECT conversation '
-                           'FROM mailinglistmessages '
-                           'WHERE msg_id = %s AND list = %s LIMIT 1', (msg_id, self.id))
-            row = cursor.fetchone()
-            if row is not None:
-                return MailinglistConversation(self.env, row[0]), False
+        for in_reply_to in in_reply_tos.split():
+            match = re.search('<[^>]+>', in_reply_to)
+            if match:
+                msg_id = match.group(0)
+                self.env.log.debug("Searching for message with msg_id %s", msg_id)
+                db = self.env.get_read_db()
+                cursor = db.cursor()
+                cursor.execute('SELECT conversation '
+                               'FROM mailinglistmessages '
+                               'WHERE msg_id = %s AND list = %s LIMIT 1', (msg_id, self.id))
+                row = cursor.fetchone()
+                if row is not None:
+                    return MailinglistConversation(self.env, row[0]), False
 
         conv = MailinglistConversation(self.env, mailinglist=self, date=date, subject=subject)
         conv.insert()
@@ -265,22 +270,24 @@ class Mailinglist(object):
         "In-Reply-To" or "References" headers this version tries to
         locate conversations using the message subject instead.
         """
-        if len(subject) > 2 and  subject[2] == ':':
-            topic = subject[3:].lstrip()
-        else:
-            topic = subject
-        topic = topic.replace(' ', '')
+        if subject is not None:
+            def prepare_subject_for_compare(subject):
+                if len(subject) > 2 and subject[2] == ':':
+                    subject = subject[3:].lstrip()
+                subject = subject.replace(" ","")
+                return subject
+            topic = prepare_subject_for_compare(subject)
 
-        self.env.log.debug("Searching for message with topic %s", topic)
-        db = self.env.get_read_db()
-        cursor = db.cursor()
-        cursor.execute('SELECT subject, conversation '
-                       'FROM mailinglistmessages '
-                       'WHERE list = %s AND date < %s'
-                       'ORDER BY DATE LIMIT 1', (self.id, date))
-        for row in cursor:
-            if subject == row[0].replace(' ',''):
-                return MailinglistConversation(self.env, row[1]), False
+            self.env.log.debug("Searching for message with topic %s", topic)
+            db = self.env.get_read_db()
+            cursor = db.cursor()
+            cursor.execute('SELECT subject, conversation '
+                           'FROM mailinglistmessages '
+                           'WHERE list = %s AND date < %s'
+                           'ORDER BY DATE DESC LIMIT 100', (self.id, date))
+            for row in cursor:
+                if row[0] and prepare_subject_for_compare(row[0]) == topic:
+                    return MailinglistConversation(self.env, row[1]), False
 
         conv = MailinglistConversation(self.env, mailinglist=self, date=date, subject=subject)
         conv.insert()
