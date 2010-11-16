@@ -29,7 +29,9 @@
 	    </span>
 	    <span class="date" py:content="format_datetime(conversation.date)"/>
 	  </div>
-	  <div class="quote" py:content="conversation.get_first().body.lstrip()[:300]"/>
+	  <py:with vars="first = conversation.get_first()">
+	    <div class="quote" py:content="first.body.lstrip()[:300]" py:if="first"/>
+	  </py:with>
 	</div>
       </div>
     </div>

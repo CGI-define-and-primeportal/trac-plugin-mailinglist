@@ -790,7 +790,7 @@ class MailinglistConversation(object):
 
     def get_first(self):
         if self._first is None:
-            raise ResourceNotFound("First not set")
+            return None
         return MailinglistMessage(self.env, self._first)
 
     def set_first(self, message, db=None):
