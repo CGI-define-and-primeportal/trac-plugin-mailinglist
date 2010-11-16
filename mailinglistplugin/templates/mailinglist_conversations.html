@@ -20,7 +20,7 @@
 	<div class="conversation" py:for="conversation in mailinglist.conversations(offset,limit)">
 	  <div class="subject">
 	    <a href="${url_of(conversation.resource, offset=offset)}">
-	      ${len(conversation.subject) and conversation.subject or 'View Conversation'}
+	      ${conversation.subject or 'View Conversation'}
 	    </a>
 	  </div>
 	  <div class="conversationinfo">

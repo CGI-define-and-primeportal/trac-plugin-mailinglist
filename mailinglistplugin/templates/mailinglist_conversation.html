@@ -21,7 +21,7 @@
 	<div class="conversation" py:for="message in conversation.messages()">
 	  <div class="subject">
 	    <a href="${url_of(message.resource, offset=offset)}">
-	      ${len(message.subject) and message.subject or 'View Message'}
+	      ${message.subject or 'View Message'}
 	    </a>
 	  </div>
 	  <div class="to">To: ${message.to_header}</div>
