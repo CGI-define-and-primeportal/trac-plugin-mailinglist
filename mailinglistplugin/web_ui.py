@@ -33,7 +33,7 @@ class MailinglistModule(Component):
     # ITemplateProvider methods
 
     def get_htdocs_dirs(self):
-        return []
+        return [('mailinglist', pkg_resources.resource_filename(__name__, 'htdocs'))]
 
     def get_templates_dirs(self):
         return [pkg_resources.resource_filename(__name__, 'templates')]
