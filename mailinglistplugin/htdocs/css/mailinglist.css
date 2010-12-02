@@ -4,24 +4,24 @@ table.mailinglists dl {
                                    }
 
 
-table.mailinglists {
- clear: both;
- border-bottom: 1px solid #d7d7d7;
- border-collapse: collapse;
- border-spacing: 0;
- margin-top: 1em;
- width: 100%;
-}
-table.mailinglists th { text-align: left; padding: 0 1em .1em 0; font-size: 12px }
-table.mailinglists thead { background: #f7f7f0 }
-table.mailinglists thead th {
- border: 1px solid #d7d7d7;
- border-bottom-color: #999;
- font-size: 11px;
- font-weight: bold;
- padding: 2px .5em;
- vertical-align: bottom;
-}
+/*table.mailinglists {*/
+/* clear: both;*/
+/* border-bottom: 1px solid #d7d7d7;*/
+/* border-collapse: collapse;*/
+/* border-spacing: 0;*/
+/* margin-top: 1em;*/
+/* width: 100%;*/
+/*}*/
+/*table.mailinglists th { text-align: left; padding: 0 1em .1em 0; font-size: 12px }*/
+/*table.mailinglists thead { background: #f7f7f0 }*/
+/*table.mailinglists thead th {*/
+/* border: 1px solid #d7d7d7;*/
+/* border-bottom-color: #999;*/
+/* font-size: 11px;*/
+/* font-weight: bold;*/
+/* padding: 2px .5em;*/
+/* vertical-align: bottom;*/
+/*}*/
 
 table.mailinglists tbody td, table.mailinglists tbody th {
  padding: .3em .5em;
