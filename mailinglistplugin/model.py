@@ -284,7 +284,7 @@ class Mailinglist(object):
             cursor.execute('SELECT subject, conversation '
                            'FROM mailinglistmessages '
                            'WHERE list = %s AND date < %s'
-                           'ORDER BY DATE DESC LIMIT 100', (self.id, date))
+                           'ORDER BY DATE DESC LIMIT 100', (self.id, to_timestamp(date)))
             for row in cursor:
                 if row[0] and prepare_subject_for_compare(row[0]) == topic:
                     return MailinglistConversation(self.env, row[1]), False
