@@ -666,7 +666,7 @@ class MailinglistMessage(object):
                            'date, from_name, from_email, to_header, cc_header) '
                            ' VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)',
                            (self.conversation.id, self.conversation.mailinglist.id, self._raw,
-                            self.subject, self.body, self.msg_id, to_timestamp(self.date),
+                            self.subject or '', self.body or '', self.msg_id, to_timestamp(self.date),
                             self.from_name, self.from_email, self.to_header, self.cc_header))
             self.id = db.get_last_id(cursor, 'mailinglistmessages')
             
@@ -687,7 +687,7 @@ class MailinglistMessage(object):
                            'from_name=%s, from_email=%s, to_header=%s, cc_header=%s'
                            'WHERE id = %s',
                            (self.conversation.id, self.conversation.mailinglist.id, self._raw,
-                            self.subject, self.body, self.msg_id, to_timestamp(self.date),
+                            self.subject or '', self.body or '', self.msg_id, to_timestamp(self.date),
                             self.from_name, self.from_email, self.to_header, self.cc_header))
 
         for listener in MailinglistSystem(self.env).messagechange_listeners:
@@ -771,7 +771,7 @@ class MailinglistConversation(object):
             cursor.execute('INSERT INTO mailinglistconversations (list, date, subject) '
                            ' VALUES (%s, %s, %s)',
                            (self.mailinglist.id, to_timestamp(self.date),
-                            self.subject))
+                            self.subject or ""))
             self.id = db.get_last_id(cursor, 'mailinglistconversations')
 
         for listener in MailinglistSystem(self.env).conversationchange_listeners:
@@ -788,7 +788,7 @@ class MailinglistConversation(object):
             cursor.execute('UPDATE mailinglistconversations SET list=%s, date=%s, subject=%s '
                            'WHERE id = %s',
                            (self.mailinglist.id, to_timestamp(self.date),
-                            self.subject, self.id))
+                            self.subject or '', self.id))
         
         for listener in MailinglistSystem(self.env).conversationchange_listeners:
             listener.mailinglistconversation_changed(self)
