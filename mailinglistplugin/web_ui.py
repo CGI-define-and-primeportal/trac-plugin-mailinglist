@@ -12,8 +12,9 @@ from trac.util.translation import _
 from trac.attachment import Attachment, AttachmentModule
 from trac.util.compat import any, partial
 from trac.wiki.api import IWikiSyntaxProvider
-from trac.util.datefmt import format_datetime, from_utimestamp
+from trac.util.datefmt import format_datetime, utc, to_timestamp
 from trac.search import ISearchSource, search_to_sql, shorten_result
+from trac.timeline.api import ITimelineEventProvider
 
 from datetime import datetime
 import re
@@ -26,7 +27,7 @@ import pkg_resources
 
 class MailinglistModule(Component):
     implements(IRequestHandler, ITemplateProvider, INavigationContributor,
-               IWikiSyntaxProvider, ISearchSource)
+               IWikiSyntaxProvider, ISearchSource, ITimelineEventProvider)
 
     limit = IntOption("mailinglist", "page_size", 20,
                       "Number of conversations to show per page")
@@ -238,3 +239,62 @@ class MailinglistModule(Component):
                 
             return 'mailinglist_list.html', data, None
     
+    # ITimelineEventProvider methods
+
+    def get_timeline_filters(self, req):
+        if 'MAILINGLIST_VIEW' in req.perm:
+            yield ('mailinglist', _("Mailinglist messages"))
+
+    def get_timeline_events(self, req, start, stop, filters):
+        if 'mailinglist' in filters:
+            mailinglist_realm = Resource('mailinglist')
+
+            lists = {}
+            for mailinglist in Mailinglist.select(self.env):
+                if "MAILINGLIST_VIEW" in req.perm(mailinglist.resource):         
+                    lists[mailinglist.id] = mailinglist
+
+            if not lists:
+                self.log.debug("This user can't view any lists, so not listing timeline events.")
+                return
+
+            self.log.debug("Searching for timeline events in %s", lists)
+
+            db = self.env.get_read_db()
+
+            cursor = db.cursor()
+            cursor.execute("SELECT id, subject, body, from_name, from_email, date, list, conversation "
+                           "FROM mailinglistmessages "
+                           "WHERE date>=%%s AND date<=%%s AND list IN (%s)" % ",".join(map(str,lists.keys())),
+                           (to_timestamp(start), to_timestamp(stop)))
+            # 
+            for mid, subject, body, from_name, from_email, date, mlist, conversation in cursor:
+                # build resource ourself to speed things up
+                m = mailinglist_realm(id="%s/%d/%d" % (lists[mlist].emailaddress,
+                                                       conversation,
+                                                       mid))
+                if 'MAILINGLIST_VIEW' in req.perm(m):
+                    yield ('mailinglist', 
+                           datetime.fromtimestamp(date, utc),
+                           "%s <%s>" % (from_name, from_email),
+                           (mid,
+                            subject, 
+                            body.lstrip()[:200],
+                            lists[mlist].name, 
+                            lists[mlist].emailaddress, 
+                            conversation))
+
+                # Attachments
+                for event in AttachmentModule(self.env).get_timeline_events(
+                    req, mailinglist_realm, start, stop):
+                    yield event
+
+    def render_timeline_event(self, context, field, event):
+        mid, subject, snippet, listname, listemailaddress, conversation = event[3]
+        if field == 'url':
+            return context.href.mailinglist(listemailaddress, conversation, mid)
+        elif field == 'title':
+            return "%s: %s" % (listname, subject)
+        elif field == 'description':
+            return snippet
+
