@@ -15,6 +15,7 @@ from trac.wiki.api import IWikiSyntaxProvider
 from trac.util.datefmt import format_datetime, from_utimestamp
 from trac.search import ISearchSource, search_to_sql, shorten_result
 
+from datetime import datetime
 import re
 from genshi.builder import tag
 
@@ -114,7 +115,8 @@ class MailinglistModule(Component):
             if 'MAILINGLIST_VIEW' in req.perm(m):
                 yield (req.href.mailinglist(m.id),
                        tag("%s: %s" % (lists[mlist].name, subject)),
-                       from_utimestamp(date), "%s <%s>" % (from_name, from_email),
+                       datetime.fromtimestamp(date, utc),
+                       "%s <%s>" % (from_name, from_email),
                        shorten_result(body, terms))
         
         # Attachments
