@@ -160,7 +160,9 @@ class MailinglistModule(Component):
         
         if 'messageid' in req.args:
             message = MailinglistMessage(self.env, req.args['messageid'])
-
+            # leaks the subject of the email in the error, wonder if
+            # that's a problem...
+            req.perm(message.resource).require("MAILINGLIST_VIEW")
             if req.args.get('format') == "raw":
                 req.send_header('Content-Disposition', 'attachment')
                 req.send_response(200)
@@ -191,6 +193,8 @@ class MailinglistModule(Component):
             
         if 'conversationid' in req.args:
             conversation = MailinglistConversation(self.env, req.args['conversationid'])
+            # also leaks the subject of the first email in the error message
+            req.perm(conversation.resource).require("MAILINGLIST_VIEW")
             data['conversation'] = conversation
             data['attachmentselect'] = partial(Attachment.select, self.env)
             add_link(req, 'up', get_resource_url(self.env, conversation.mailinglist.resource, req.href,
@@ -204,6 +208,9 @@ class MailinglistModule(Component):
         elif 'listname' in req.args:
             mailinglist = Mailinglist.select_by_address(self.env,
                                                         req.args['listname'], localpart=True)
+            # leaks the name of the mailinglist
+            req.perm(mailinglist.resource).require("MAILINGLIST_VIEW")
+
             data['mailinglist'] = mailinglist
 
             if data['offset'] + data['limit'] < mailinglist.count_conversations():

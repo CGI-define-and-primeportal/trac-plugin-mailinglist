@@ -21,29 +21,37 @@
 
       <div class="conversations">
 	<div class="conversation" py:for="message in conversation.messages()">
-	  <div class="subject">
-	    <a href="${url_of(message.resource, offset=offset)}">
-	      ${message.subject or 'View Message'}
-	    </a>
-	  </div>
-	  <div class="to">To: ${message.to_header}</div>
-	  <div class="cc" py:if="message.cc_header">CC: ${message.cc_header}</div>
-	  <div class="from">From: ${message.from_name} &lt;<a href="mailto:${message.from_email}" py:content="message.from_email"/>&gt;</div>
-	  <div class="date">Date: ${format_datetime(message.date)}</div>
-	  <ul>
-	    <li py:for="attachment in attachmentselect(message.resource.realm, message.resource.id)">
-	      <a href="${url_of(attachment.resource)}">
-		${attachment.filename}
-	      </a>
-	    </li>
-	  </ul>
-	  <py:with vars="body, quote = message.split_body">
-	    <pre py:content="body"/>
-	    <div py:if="quote">
-	      <a href="#" class="morebody">(More)</a>
-	      <pre py:content="quote" class="hidden"/>
-	    </div>
-	  </py:with>
+          <py:choose>
+	    <py:when test="'MAILINGLIST_VIEW' in req.perm(message.resource)"> 
+	      <div class="subject">
+		<a href="${url_of(message.resource, offset=offset)}">
+		  ${message.subject or 'View Message'}
+		</a>
+	      </div>
+	      <div class="to">To: ${message.to_header}</div>
+	      <div class="cc" py:if="message.cc_header">CC: ${message.cc_header}</div>
+	      <div class="from">From: ${message.from_name} &lt;<a href="mailto:${message.from_email}" py:content="message.from_email"/>&gt;</div>
+	      <div class="date">Date: ${format_datetime(message.date)}</div>
+	      <ul>
+		<li py:for="attachment in attachmentselect(message.resource.realm, message.resource.id)">
+		  <a href="${url_of(attachment.resource)}">
+		    ${attachment.filename}
+		  </a>
+		</li>
+	      </ul>
+	      
+	      <py:with vars="body, quote = message.split_body">
+		<pre py:content="body"/>
+		<div py:if="quote">
+		  <a href="#" class="morebody">(More)</a>
+		  <pre py:content="quote" class="hidden"/>
+		</div>
+	      </py:with>
+	    </py:when>
+	    <py:otherwise test="">
+	      [Hidden message]
+	    </py:otherwise>
+	  </py:choose>
 	</div>
       </div>
     </div>
