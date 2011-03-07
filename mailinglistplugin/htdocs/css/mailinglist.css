@@ -1,8 +1,7 @@
-table.mailinglists dl { 
-                                   float: left;
-                                   margin: 0 4em 0 0;
-                                   }
-
+table.mailinglists dl {
+  float: left;
+  margin: 0 4em 0 0;
+}
 
 /*table.mailinglists {*/
 /* clear: both;*/
@@ -22,40 +21,39 @@ table.mailinglists dl {
 /* padding: 2px .5em;*/
 /* vertical-align: bottom;*/
 /*}*/
-
-table.mailinglists tbody td, table.mailinglists tbody th {
- padding: .3em .5em;
- vertical-align: top;
+table.mailinglists tbody td,table.mailinglists tbody th {
+  padding: .3em .5em;
+  vertical-align: top;
 }
 
-table.mailinglists tr.listinfo td { 
-                                 border-top: 1px dotted #ddd;
-                                 }
+table.mailinglists tr.listinfo td {
+  border-top: 1px dotted #ddd;
+}
 
-table.mailinglists tr.hidden { 
-                                   display: none;
-                                 }
+table.mailinglists tr.hidden {
+  display: none;
+}
 
-div.conversations { 
-                    margin-top: 2em;
- }
+div.conversations {
+  margin-top: 5px;
+}
 
-div.conversation span.count { 
-                               float: right;
-                               }
+div.conversation span.count {
+  float: right;
+}
 
-div.conversation div.quote { 
-                              padding-left: 3em;
-                               }
+div.conversation div.quote {
+  padding-left: 3em;
+}
 
-div.conversation div.subject, div.conversation div.conversationinfo { 
-                               background: #eee;
-                               }
+div.conversation div.subject,div.conversation div.conversationinfo {
+  background: #eee;
+}
 
-div.conversation { 
-                   padding-bottom: 1em;
- }
+div.conversation {
+  padding-bottom: 1em;
+}
 
-div.conversation pre.hidden { 
-                              display: none;
-                              }
+div.conversation pre.hidden {
+  display: none;
+}
