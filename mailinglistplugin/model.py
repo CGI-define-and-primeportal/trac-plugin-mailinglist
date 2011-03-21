@@ -237,7 +237,7 @@ class Mailinglist(object):
             attachment = Attachment(self.env, m.resource.realm, m.resource.id)
             attachmentbytes = part.get_payload(decode=True)
             attachment.author = trac_username
-            attachment.insert(filename, StringIO(attachmentbytes), len(attachmentbytes))
+            attachment.insert(filename, StringIO(attachmentbytes), len(attachmentbytes), t=date)
         
         return m
         
