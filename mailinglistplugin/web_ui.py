@@ -290,10 +290,10 @@ class MailinglistModule(Component):
                             lists[mlist].emailaddress, 
                             conversation))
 
-                # Attachments
-                for event in AttachmentModule(self.env).get_timeline_events(
-                    req, mailinglist_realm, start, stop):
-                    yield event
+            # Attachments
+            for event in AttachmentModule(self.env).get_timeline_events(
+                req, mailinglist_realm, start, stop):
+                yield event
 
     def render_timeline_event(self, context, field, event):
         mid, subject, snippet, listname, listemailaddress, conversation = event[3]
