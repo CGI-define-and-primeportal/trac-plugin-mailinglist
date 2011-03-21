@@ -14,7 +14,6 @@ from trac.util.compat import any, partial
 from trac.wiki.api import IWikiSyntaxProvider
 from trac.util.datefmt import format_datetime, utc, to_timestamp
 from trac.search import ISearchSource, search_to_sql, shorten_result
-from trac.timeline.api import ITimelineEventProvider
 
 from datetime import datetime
 import re
