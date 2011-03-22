@@ -99,11 +99,11 @@ class Mailinglist(object):
         if self.postperm is None:
             self.postperm = "MEMBERS" # default
         if self.postperm not in ("MEMBERS","RESTRICTED","OPEN"):
-            raise KeyError("%s is not a valid post permission" % self.postperm)
+            raise TracError("%s is not a valid post permission" % self.postperm)
         if self.replyto is None:
             self.replyto = "SENDER" # default
         if self.replyto not in ("LIST","SENDER"):
-            raise KeyError("%s is not a valid reply-to option" % self.replyto) 
+            raise TracError("%s is not a valid reply-to option" % self.replyto) 
         
     def insert(self, db=None):
         """Add new mailinglist."""
