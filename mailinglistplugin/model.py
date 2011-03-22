@@ -94,6 +94,8 @@ class Mailinglist(object):
 
 
     def _validate_options(self):
+        if re.search("[^a-z0-9-_.]", self.emailaddress):
+            raise TracError("Email address can only contain letters, numbers and - _ .")
         if self.postperm is None:
             self.postperm = "MEMBERS" # default
         if self.postperm not in ("MEMBERS","RESTRICTED","OPEN"):
