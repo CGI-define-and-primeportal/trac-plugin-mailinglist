@@ -231,7 +231,7 @@ class Mailinglist(object):
                 continue
             if part.get_content_type == 'text/plain':
                 continue
-            filename = decode_header(part.get_filename())
+            filename = part.get_filename()
             missing = object()
             if not filename or filename is missing:
                     continue
