@@ -20,7 +20,7 @@ class MailinglistPermissionPolicy(Component):
 
         elif action is "MAILINGLIST_VIEW":
             self.log.debug("Deciding if %s can do %s on %s", username, action, resource)
-            # if no resource, then it's no to the general permissions table
+            # if no resource, then it's up to the general permissions table
             if resource and resource.realm == "mailinglist":
                 if perm and "TRAC_ADMIN" in perm:
                     return True
