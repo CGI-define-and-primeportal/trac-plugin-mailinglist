@@ -1,5 +1,5 @@
 from trac.mimeview.api import Mimeview, IContentConverter, Context
-from trac.core import Component, implements
+from trac.core import *
 from trac.perm import IPermissionRequestor
 from trac.resource import Resource, IResourceManager, get_resource_url, ResourceNotFound
 from trac.config import BoolOption, IntOption, ListOption
@@ -140,7 +140,11 @@ class MailinglistModule(Component):
             return True
 
     def process_request(self, req):
-        offset = int(req.args.get("offset",0))
+        offset = req.args.get("offset",0)
+        try:
+            offset = int(offset)
+        except:
+            raise TracError(_('Invalid offset used: %(offset)s', offset=offset))        
 
         add_stylesheet(req, 'mailinglist/css/mailinglist.css')
         add_javascript(req, 'mailinglist/mailinglist.js')
