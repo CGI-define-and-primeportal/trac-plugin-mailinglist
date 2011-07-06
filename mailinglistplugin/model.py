@@ -820,22 +820,20 @@ class MailinglistConversation(object):
 
     first = property(get_first, set_first)
 
-    def count_messages(self, insubject=None):
+    def count_messages(self):
         db = self.env.get_read_db()
         cursor = db.cursor()
-        insubject_term = insubject and """AND subject LIKE '%%%s%%'""" % insubject or ""
         cursor.execute("""SELECT count(id) FROM mailinglistmessages
-        WHERE conversation = %s %s""", (self.id,insubject_term))
+        WHERE conversation = %s""", (self.id,))
         return cursor.fetchone()[0]
             
-    def messages(self, offset=None, limit=None, insubject=None, desc=False):
+    def messages(self, offset=None, limit=None, desc=False):
         db = self.env.get_read_db()
         cursor = db.cursor()
-        insubject_term = insubject and """AND subject LIKE '%%%s%%'""" % insubject or ""
         offset_term = offset and "OFFSET %d" % offset or ""
         limit_term = limit and "LIMIT %d" % limit or ""
         desc_term = desc and "DESC" or ""
         cursor.execute("""SELECT id FROM mailinglistmessages
-        WHERE conversation = %%s %s ORDER BY date %s %s %s""" % (insubject_term, desc_term, limit_term, offset_term), (self.id,))
+        WHERE conversation = %%s ORDER BY date %s %s %s""" % (desc_term, limit_term, offset_term), (self.id,))
         for row in cursor:
             yield MailinglistMessage(self.env, row[0])
