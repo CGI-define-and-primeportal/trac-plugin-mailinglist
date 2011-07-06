@@ -348,21 +348,29 @@ class Mailinglist(object):
         for row in cursor:
             yield MailinglistConversation(self.env, row[0])
 
-    def count_messages(self):
+    def count_messages(self, insubject=None):
         db = self.env.get_read_db()
         cursor = db.cursor()
-        cursor.execute("""SELECT count(id) FROM mailinglistmessages
-        WHERE list = %s""", (self.id,))
+        if insubject:
+            cursor.execute("""SELECT count(id) FROM mailinglistmessages
+            WHERE list = %s AND subject LIKE %s""",(self.id, '%%%s%%' %insubject))
+        else:
+            cursor.execute("""SELECT count(id) FROM mailinglistmessages
+            WHERE list = %s""", (self.id,))
         return cursor.fetchone()[0]
             
-    def messages(self, offset=None, limit=None, desc=False):
+    def messages(self, offset=None, limit=None, insubject=None, desc=False):
         db = self.env.get_read_db()
         cursor = db.cursor()
         offset_term = offset and "OFFSET %d" % offset or ""
         limit_term = limit and "LIMIT %d" % limit or ""
         desc_term = desc and "DESC" or ""
-        cursor.execute("""SELECT id FROM mailinglistmessages
-        WHERE list = %%s ORDER BY date %s %s %s""" % (desc_term, limit_term, offset_term), (self.id,))
+        if insubject:
+            cursor.execute("""SELECT id FROM mailinglistmessages
+            WHERE list = %%s AND subject LIKE %%s ORDER BY date %s %s %s""" % (desc_term, limit_term, offset_term), (self.id, '%%%s%%' %insubject))
+        else:
+            cursor.execute("""SELECT id FROM mailinglistmessages
+            WHERE list = %%s ORDER BY date %s %s %s""" % (desc_term, limit_term, offset_term), (self.id,))
         for row in cursor:
             yield MailinglistMessage(self.env, row[0])
 
