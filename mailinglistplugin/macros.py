@@ -1,4 +1,5 @@
 from trac.wiki.macros import WikiMacroBase
+from trac.wiki.api import parse_args
 from trac.wiki.formatter import system_message
 from trac.resource import ResourceSystem, Resource, ResourceNotFound, get_resource_url
 from trac.util.datefmt import format_datetime, pretty_timedelta
@@ -43,11 +44,7 @@ Some other possible ways to include mailinglist content in a page:
     """
     # IWikiMacroProvider methods
     def render_macro(self, req, name, content):
-        if content:
-            args = [x.strip() for x in content.split(',')]
-        else:
-            args = []
-
+        args,kwargs = parse_args(content)
         if len(args) == 0:
             ul = tag.ul(class_="mailinglistlist")
 
@@ -57,26 +54,27 @@ Some other possible ways to include mailinglist content in a page:
                                            href=get_resource_url(self.env, mailinglist.resource, req.href))))
                         
             return ul
-        
+        if kwargs.has_key('limit'):
+            limit = int(kwargs['limit'])
+        elif len(args) > 1:
+            limit = int(args[1])
+        else:
+            limit = 10
         resource = Resource("mailinglist",args[0])
         instance = MailinglistSystem(self.env).get_instance_for_resource(resource)
 
         if isinstance(instance, Mailinglist):
             if not req.perm(instance.resource).has_permission('MAILINGLIST_VIEW'):
                 return system_message("Permission denied viewing mailinglist: %s" % instance.name)
-            if len(args) > 1:
-                limit = int(args[1])
-            else:
-                limit = 10
             ul = tag.ul()
-            for message in instance.messages(limit=limit,desc=True):
+            for message in instance.messages(limit=limit, insubject=kwargs.get('insubject', None),desc=True):
                 ul.append(tag.li(
                     tag.a(tag.span(message.subject, class_="messagesubject"),
                           href=get_resource_url(self.env, message.resource, req.href)),
                     " (",
                     tag.span(pretty_timedelta(message.date), class_="messageage"),
                     " ago)"))
-            ul.append(tag.li(tag.a("(%d messages...)" % instance.count_messages(),
+            ul.append(tag.li(tag.a("(%d messages...)" % instance.count_messages(insubject=kwargs.get('insubject', None)),
                                    href=get_resource_url(self.env, instance.resource, req.href))))
             return tag.div("Mailinglist: ",
                            tag.a(instance.name,
@@ -91,8 +89,7 @@ Some other possible ways to include mailinglist content in a page:
             else:
                 limit = None
             text = wrap_and_quote(instance.body, 78)[0]
-            if len(args) > 1:
-                limit = int(args[1])
+            if limit:
                 text = "\n".join(text.split("\n")[0:limit])
                 textelement = tag.pre(text) + tag.a(tag.pre("(More...)"),
                                                     href=get_resource_url(self.env, instance.resource, req.href))
