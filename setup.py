@@ -56,7 +56,8 @@ setup(
             'mailinglistplugin.web_ui = mailinglistplugin.web_ui',
             'mailinglistplugin.macros = mailinglistplugin.macros',
             ]},
-    install_requires = [''],
+    install_requires = ['Trac>=0.12', 'Genshi>=0.5', 'AnnouncerPlugin',
+                        ],
     tests_require = ['nose'],
     test_suite = 'nose.collector',
 )
