@@ -14,6 +14,7 @@ from trac.util.compat import any, partial
 from trac.wiki.api import IWikiSyntaxProvider
 from trac.util.datefmt import format_datetime, utc, to_timestamp
 from trac.search import ISearchSource, search_to_sql, shorten_result
+from trac.util.presentation import Paginator
 
 from datetime import datetime
 import re
@@ -141,11 +142,19 @@ class MailinglistModule(Component):
 
     def process_request(self, req):
         offset = req.args.get("offset",0)
+        page = req.args.get('page', 1)
         try:
             offset = int(offset)
         except:
             raise TracError(_('Invalid offset used: %(offset)s', offset=offset))        
-
+        
+        try:
+            page = int(page)
+        except:
+            raise TracError(_('Invalid page used: %(page)s', page=page))
+                
+        offset = (page - 1) * self.limit
+        
         add_stylesheet(req, 'mailinglist/css/mailinglist.css')
         add_javascript(req, 'mailinglist/mailinglist.js')
             
@@ -215,6 +224,32 @@ class MailinglistModule(Component):
             req.perm(mailinglist.resource).require("MAILINGLIST_VIEW")
 
             data['mailinglist'] = mailinglist
+            
+            results = Paginator(mailinglist.conversations(),
+                            page - 1,
+                            self.limit)
+
+            if results.has_next_page:
+                next_href = get_resource_url(self.env, mailinglist.resource, req.href, page=page + 1) 
+                add_link(req, 'next', next_href, _('Next Page'))
+
+            if results.has_previous_page:
+                prev_href = get_resource_url(self.env, mailinglist.resource, req.href, page=page - 1) 
+                add_link(req, 'prev', prev_href, _('Previous Page'))
+             
+
+            pagedata = []
+            shown_pages = results.get_shown_pages()
+            for p in shown_pages:
+                page_href = get_resource_url(self.env, mailinglist.resource, req.href, page=p)
+                pagedata.append([page_href, None, str(p),
+                                 _('Page %(num)d', num=p)])
+            fields = ['href', 'class', 'string', 'title']
+            results.shown_pages = [dict(zip(fields, p)) for p in pagedata]
+            results.current_page = {'href': None, 'class': 'current',
+                                    'string': str(results.page + 1),
+                                    'title': None}
+            data['paginator'] = results
 
             if data['offset'] + data['limit'] < mailinglist.count_conversations():
                 add_link(req, 'next',
