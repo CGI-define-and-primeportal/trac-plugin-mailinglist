@@ -209,6 +209,28 @@ class MailinglistModule(Component):
             req.perm(conversation.resource).require("MAILINGLIST_VIEW")
             data['conversation'] = conversation
             data['attachmentselect'] = partial(Attachment.select, self.env)
+            
+            results = Paginator(conversation.messages(), page - 1, self.limit)
+            if results.has_next_page:
+                next_href = get_resource_url(self.env, conversation.resource, req.href, page=page + 1) 
+                add_link(req, 'next', next_href, _('Next Page'))
+
+            if results.has_previous_page:
+                prev_href = get_resource_url(self.env, conversation.resource, req.href, page=page - 1) 
+                add_link(req, 'prev', prev_href, _('Previous Page'))
+            
+            pagedata = []
+            shown_pages = results.get_shown_pages()
+            for p in shown_pages:
+                page_href = get_resource_url(self.env, conversation.resource, req.href, page=p)
+                pagedata.append([page_href, None, str(p),
+                                 _('Page %(num)d', num=p)])
+            fields = ['href', 'class', 'string', 'title']
+            results.shown_pages = [dict(zip(fields, p)) for p in pagedata]
+            results.current_page = {'href': None, 'class': 'current',
+                                    'string': str(results.page + 1),
+                                    'title': None}
+            data['paginator'] = results
             add_link(req, 'up', get_resource_url(self.env, conversation.mailinglist.resource, req.href,
                                                  offset=data['offset']),
                      _("List of conversations"))

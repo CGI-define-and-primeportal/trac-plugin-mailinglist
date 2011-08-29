@@ -8,5 +8,12 @@ jQuery(function($){
         $(this).closest('form').submit();
         return false;
     })
-    
+    $(".viewinfo").click(function(e){
+    	var parent = $(this).closest('div').parent().parent();
+    	parent.next('.information').toggleClass('hidden');
+    	
+    });
+    $(".morebody").click(function(e){
+    	$(this).next('pre').toggleClass('hidden');
+    });
 })
