@@ -47,6 +47,7 @@ setup(
     entry_points = {
         'define.importers': [
             'mbox = mailinglistplugin.importers:mbox_to_mailinglist_importer',
+            'maildir = mailinglistplugin.importers:maildir_to_mailinglist_importer',
             ],
         'trac.plugins': [
             'mailinglistplugin.api = mailinglistplugin.api',
