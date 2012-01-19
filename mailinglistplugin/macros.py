@@ -25,7 +25,7 @@ Show a list of the recent '''20''' messages to a particular mailinglist:
 
 Show a list of the recent '''20''' messages to a particular mailinglist with subject contains '''bart''':
 
-   `[[Mailinglist(`''mailinglist-name''`,limit=20, insubject=bart)]]`
+   `[[Mailinglist(`''mailinglist-name''`, limit=20, insubject=bart)]]`
 
 Show the content of message:
 
