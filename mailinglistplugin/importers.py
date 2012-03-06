@@ -1,19 +1,13 @@
-from threading import Thread
-from Queue import Queue
-import gzip
 import os
 import mailbox
 import time
 import tempfile
-from trac.env import open_environment
-from trac.resource import ResourceNotFound
-from trac.config import _TRUE_VALUES
-from mailinglistplugin.model import Mailinglist
+import gzip
+
+from threading import Thread
 from dateutil.parser import parse as parse_date
 from datetime import datetime
 from ConfigParser import ConfigParser
-
-from trac.util.datefmt import utc
 
 try:
     from xml.etree import ElementTree as et
@@ -23,6 +17,14 @@ except ImportError:
     from elementtree import ElementTree as et
     import simplejson as json
     from md5 import new as md5
+
+from trac.util.datefmt import utc
+from trac.env import open_environment
+from trac.resource import ResourceNotFound
+from trac.config import _TRUE_VALUES
+from mailinglistplugin.model import Mailinglist
+
+
 def to_bool(s):
     try:
         return s.lower() in _TRUE_VALUES
@@ -70,7 +72,7 @@ class mbox_to_mailinglist_importer(object):
     product = 'mbox'
 
     def import_project(self, sourcepath, destinationpath, name=None, **kwargs):
-        boxqueue = Queue()
+        threads = []
         if os.path.exists (os.path.join(sourcepath,'mailinglist.xml')):
             mlists = self.get_listdata_from_xml(os.path.join(sourcepath,'mailinglist.xml'))
         elif os.path.exists(os.path.join('mailinglist.json')):
@@ -81,7 +83,11 @@ class mbox_to_mailinglist_importer(object):
                 fullpath = os.path.join(sourcepath, entry)
                 if not os.path.isfile(fullpath):
                     continue
-                boxqueue.put((fullpath, None))            
+                t = Thread(target=self.read_file, args=(fullpath, None))
+                t.daemon = True
+                t.start()            
+                threads.append(t) 
+                
         self.xml_root = et.parse(os.path.join(sourcepath, 'mailinglist.xml')).getroot()
         if os.path.exists(os.path.join(sourcepath, 'target.ini')):
             cp = ConfigParser()
@@ -100,7 +106,7 @@ class mbox_to_mailinglist_importer(object):
         
         env_path = os.path.join(destinationpath, name)
         self.env = open_environment(env_path)
-        threads = [ ]
+        
        
         self.env.log.info('Importing from %s', sourcepath)
         importdir = os.path.dirname(sourcepath)
@@ -174,6 +180,7 @@ class mbox_to_mailinglist_importer(object):
         groups = metadata.pop('groups','')
         subscribers = metadata.pop('subscribers', [])
         declines = metadata.pop('declines','')
+        
         try:
             mailinglist = Mailinglist.select_by_address(self.env, mailinglist_name, localpart=True)
         except ResourceNotFound:
