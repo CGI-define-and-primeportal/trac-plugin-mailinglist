@@ -11,6 +11,10 @@ from trac.config import _TRUE_VALUES
 from mailinglistplugin.model import Mailinglist
 from dateutil.parser import parse as parse_date
 from datetime import datetime
+from ConfigParser import ConfigParser
+
+from trac.util.datefmt import utc
+
 try:
     from xml.etree import ElementTree as et
     import json
@@ -66,68 +70,73 @@ class mbox_to_mailinglist_importer(object):
     product = 'mbox'
 
     def import_project(self, sourcepath, destinationpath, name=None, **kwargs):
-        if name is None:
-            raise KeyError("This importer requires a Trac project to already exist. Use --name to specify it's dir name.")
         boxqueue = Queue()
-        env_path = os.path.join(destinationpath, name)
-        self.env = open_environment(env_path)
-        import logging
-        self.env.log.setLevel(logging.WARNING)
-        self.log = logging.getLogger(self.env.path + '.' + self.__class__.__name__)
-        self.log.setLevel(logging.DEBUG)
-        
-        if os.path.isdir(sourcepath):
-            self.log.info('Importing directory %s', sourcepath)
+        if os.path.exists (os.path.join(sourcepath,'mailinglist.xml')):
+            mlists = self.get_listdata_from_xml(os.path.join(sourcepath,'mailinglist.xml'))
+        elif os.path.exists(os.path.join('mailinglist.json')):
+            mlists = self.get_listdata_from_xml(os.path.join(sourcepath,'mailinglist.json'))
+        else:
             entries = os.listdir(sourcepath)
             for entry in entries:
                 fullpath = os.path.join(sourcepath, entry)
                 if not os.path.isfile(fullpath):
                     continue
-                boxqueue.put((fullpath, None))
+                boxqueue.put((fullpath, None))            
+        self.xml_root = et.parse(os.path.join(sourcepath, 'mailinglist.xml')).getroot()
+        if os.path.exists(os.path.join(sourcepath, 'target.ini')):
+            cp = ConfigParser()
+            cp.read(os.path.join(sourcepath, 'target.ini'))
+            self.project_map = dict(cp.items('migrate'))
         else:
-            self.log.info('Importing from %s', sourcepath)
-            if sourcepath.endswith('.xml'):
-                mlists = self.get_listdata_from_xml(sourcepath)
-            elif sourcepath.endswith('.json'):
-                mlists = self.get_listdata_from_json(sourcepath)
-            importdir = os.path.dirname(sourcepath)
-            for mlist in mlists:
-                path = os.path.join(importdir, mlist.pop('mailbox'))
-                if not os.path.exists(path):
-                    self.log.error("Can't find mailbox %s from %s", path, sourcepath)
+            self.project_map = {}
+        project_name = self.project_map.get(self.xml_root.get('project'),None) 
+      
+        if name is None and project_name is None:
+            print "No mapping found to Import"
+            return
+       
+        if project_name:
+            name = project_name           
+        
+        env_path = os.path.join(destinationpath, name)
+        self.env = open_environment(env_path)
+        threads = [ ]
+       
+        self.env.log.info('Importing from %s', sourcepath)
+        importdir = os.path.dirname(sourcepath)
+        for mlist in mlists:
+            path = os.path.join(importdir, mlist.pop('mailbox'))
+            if not os.path.exists(path):
+                self.env.log.error("Can't find mailbox %s from %s", path, sourcepath)
+                continue
+            if mlist.get('mailboxmd5'):
+                self.env.env.log.debug('Checking MD5 sum of %s...', path)
+                md5digest = md5(open(path, 'r').read()).hexdigest()
+                if md5digest != mlist['mailboxmd5']:
+                    self.env.log.error("%s's md5 (%s) doesn't match %s from %s. Skipping it", path, md5digest, mlist['mailboxmd5'], sourcepath)
                     continue
-                if mlist.get('mailboxmd5'):
-                    self.log.debug('Checking MD5 sum of %s...', path)
-                    md5digest = md5(open(path, 'r').read()).hexdigest()
-                    if md5digest != mlist['mailboxmd5']:
-                        self.log.error("%s's md5 (%s) doesn't match %s from %s. Skipping it", path, md5digest, mlist['mailboxmd5'], sourcepath)
-                        continue
-                    self.log.debug('MD5 of %s ok', path)
-                else:
-                    self.log.warning("No md5 found for %s in %s", path, sourcepath)
-                boxqueue.put((path, mlist))
+                self.env.log.debug('MD5 of %s ok', path)
             else:
-                boxqueue.put((sourcepath, None))
-        def worker(queue):
-            while True:
-                mbox, metadata = queue.get()
-                try:
-                    self.read_file(mbox, metadata)
-                except:
-                    self.log.exception("Error in %s", mbox)
-                queue.task_done()
-        for _ in range(min(boxqueue.qsize(), 5)):
-            t = Thread(target=worker, args=(boxqueue,))
+                self.env.log.warning("No md5 found for %s in %s", path, sourcepath)
+            t = Thread(target=self.read_file, args=(path, mlist))
             t.daemon = True
-            t.start()
-        boxqueue.join()
+            t.start()            
+            threads.append(t)
+        else:
+            t = Thread(target=self.read_file, args=(path, None))
+            t.daemon = True
+            t.start()            
+            threads.append(t)
+        for t in threads:
+            t.join()
 
     def get_listdata_from_xml(self, sourcefile):
         xml = et.ElementTree()
         xml.parse(sourcefile)
         for mlist in xml.findall('mailinglist'):
             attr = mlist.attrib
-            attr['date'] = parse_date(attr['date'])
+            attr['date'] = datetime.strptime(attr['date'],"%Y-%m-%d %H:%M:%S" )
+            attr['date'] = attr['date'].replace(tzinfo=utc)
             attr['private'] = to_bool(attr['private'])
             attr['subscribers'] = []
             for sub in mlist.findall('subscriber'):
@@ -147,20 +156,24 @@ class mbox_to_mailinglist_importer(object):
             yield mlist
     
     def read_file(self, mbox_file, metadata=None):
+                         
         mailinglist_name = os.path.basename(mbox_file).rstrip('mbox.gz')
+        date = datetime.utcnow()
+        date = date.replace(tzinfo=utc)
         if not metadata:
             metadata = dict(emailaddress=mailinglist_name,
                             name='%s (Imported)' % mailinglist_name,
                             private=True,
                             postperm='MEMBERS',
                             replyto='LIST',
-                            date=datetime.utcnow(),
+                            date=date,
                             individuals=[],
                             groups=[],
                             declines=[])
-        individuals = metadata.pop('individuals')
-        groups = metadata.pop('groups')
-        declines = metadata.pop('declines')
+        individuals = metadata.pop('individuals','')
+        groups = metadata.pop('groups','')
+        subscribers = metadata.pop('subscribers', [])
+        declines = metadata.pop('declines','')
         try:
             mailinglist = Mailinglist.select_by_address(self.env, mailinglist_name, localpart=True)
         except ResourceNotFound:
@@ -168,27 +181,32 @@ class mbox_to_mailinglist_importer(object):
             try:
                 mailinglist.insert()
             except Exception, e:
-                self.log.exception(metadata)
+                self.env.log.exception(metadata)
                 raise
+        
         group_subscriptions = list(mailinglist.groups())
         individual_subscriptions = list(mailinglist.individuals())
         declined_subscriptions = list(mailinglist.declines())
+        
         for group in groups:
             if (group['name'], group['poster']) not in group_subscriptions:
                 mailinglist.subscribe(group=group['name'], poster=group['poster'])
+       
         for individual in individuals:
             if (individual['name'], individual['poster']) not in individual_subscriptions:
                 mailinglist.subscribe(user=individual['name'], poster=individual['poster'])
+       
         for user in declines:
             if user not in declined_subscriptions:
                 mailinglist.unsubscribe(user=user)
+       
         if mbox_file.endswith('.gz'):
             fp, path = tempfile.mkstemp()
             tmpfile = path
             try:
                 os.write(fp, gzip.open(mbox_file, 'rb').read())
             except IOError:
-                self.log.exception('Failed to write %s from %s', path, mbox_file)
+                self.env.log.exception('Failed to write %s from %s', path, mbox_file)
                 os.unlink(tmpfile)
                 return
             finally:
@@ -196,7 +214,8 @@ class mbox_to_mailinglist_importer(object):
         else:
             path = mbox_file
             tmpfile = None
-        self.log.info('Importing mbox %s', mbox_file)
+        self.env.log.info('Importing mbox %s', mbox_file)
+               
         mbox = mailbox.mbox(path)
         inserted = 0
         errors = 0
@@ -217,17 +236,17 @@ class mbox_to_mailinglist_importer(object):
                     if e.__class__.__name__ == 'OperationalError':
                         # Only retry when we have a db failure, might for instance be failure to get file lock in sqlite
                         if try_cnt > 1:
-                            self.log.exception("Failed to insert message, retry %d/5", 6-try_cnt)
+                            self.env.log.exception("Failed to insert message, retry %d/5", 6-try_cnt)
                             try_cnt -= 1
                             time.sleep(0.5)
                         else:
-                            self.log.exception('Stop retrying')
+                            self.env.log.exception('Stop retrying')
                             errors += 1
                             break
                     else:
-                        self.log.exception('Failed to insert message')
+                        self.env.log.exception('Failed to insert message')
                         errors += 1
                         break
-        self.log.info('%s: Inserted %d/%d messages', mbox_file, inserted, inserted+errors)
+        self.env.log.info('%s: Inserted %d/%d messages', mbox_file, inserted, inserted+errors)
         if tmpfile:
             os.unlink(tmpfile)
