@@ -73,10 +73,14 @@ class mbox_to_mailinglist_importer(object):
 
     def import_project(self, sourcepath, destinationpath, name=None, **kwargs):
         threads = []
-        if os.path.exists (os.path.join(sourcepath,'mailinglist.xml')):
-            mlists = self.get_listdata_from_xml(os.path.join(sourcepath,'mailinglist.xml'))
-        elif os.path.exists(os.path.join('mailinglist.json')):
-            mlists = self.get_listdata_from_xml(os.path.join(sourcepath,'mailinglist.json'))
+        mailinglist_xml_filename = os.path.join(sourcepath, 'mailinglist.xml')
+        mailinglist_json_filename = os.path.join(sourcepath,'mailinglist.json')
+        mapping_ini = os.path.join(sourcepath, 'target.ini')  
+        
+        if os.path.exists(mailinglist_xml_filename):
+            mlists = self.get_listdata_from_xml(mailinglist_xml_filename)
+        elif os.path.exists(mailinglist_json_filename):
+            mlists = self.get_listdata_from_xml(mailinglist_json_filename)
         else:
             entries = os.listdir(sourcepath)
             for entry in entries:
@@ -87,23 +91,20 @@ class mbox_to_mailinglist_importer(object):
                 t.daemon = True
                 t.start()            
                 threads.append(t) 
-                
-        self.xml_root = et.parse(os.path.join(sourcepath, 'mailinglist.xml')).getroot()
-        if os.path.exists(os.path.join(sourcepath, 'target.ini')):
-            cp = ConfigParser()
-            cp.read(os.path.join(sourcepath, 'target.ini'))
-            self.project_map = dict(cp.items('migrate'))
-        else:
-            self.project_map = {}
-        project_name = self.project_map.get(self.xml_root.get('project'),None) 
-      
-        if name is None and project_name is None:
-            print "No mapping found to Import"
-            return
        
-        if project_name:
-            name = project_name           
+        try:
+            cp = ConfigParser()
+            cp.read(mapping_ini)
+            self.project_map = dict(cp.items('migrate'))
+        except NoSectionError,e:
+            self.project_map = {}
+            
+        self.xml_root = et.parse(mailinglist_xml_filename).getroot()
+        name = self.project_map.get(self.xml_root.get('project'))
         
+        if name is None:
+            raise ValueError("No projectname found") 
+      
         env_path = os.path.join(destinationpath, name)
         self.env = open_environment(env_path)
         
