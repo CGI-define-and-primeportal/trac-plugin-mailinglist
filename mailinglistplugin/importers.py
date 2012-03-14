@@ -75,14 +75,23 @@ class mbox_to_mailinglist_importer(object):
         threads = []
         mailinglist_xml_filename = os.path.join(sourcepath, 'mailinglist.xml')
         mailinglist_json_filename = os.path.join(sourcepath,'mailinglist.json')
-        mapping_ini = os.path.join(sourcepath, 'target.ini')  
+        mapping_ini = os.path.join(sourcepath, 'target.ini')
+        try:
+            cp = ConfigParser()
+            cp.read(mapping_ini)
+            self.project_map = dict(cp.items('migrate'))
+        except NoSectionError,e:
+            self.project_map = {}        
         
         if os.path.exists(mailinglist_xml_filename):
             mlists = self.get_listdata_from_xml(mailinglist_xml_filename)
+            self.xml_root = et.parse(mailinglist_xml_filename).getroot()
+            name = self.project_map.get(self.xml_root.get('project'), name)
         elif os.path.exists(mailinglist_json_filename):
             mlists = self.get_listdata_from_xml(mailinglist_json_filename)
         else:
             entries = os.listdir(sourcepath)
+            mlists = []
             for entry in entries:
                 fullpath = os.path.join(sourcepath, entry)
                 if not os.path.isfile(fullpath):
@@ -90,29 +99,15 @@ class mbox_to_mailinglist_importer(object):
                 t = Thread(target=self.read_file, args=(fullpath, None))
                 t.daemon = True
                 t.start()            
-                threads.append(t) 
-       
-        try:
-            cp = ConfigParser()
-            cp.read(mapping_ini)
-            self.project_map = dict(cp.items('migrate'))
-        except NoSectionError,e:
-            self.project_map = {}
-            
-        self.xml_root = et.parse(mailinglist_xml_filename).getroot()
-        name = self.project_map.get(self.xml_root.get('project'))
-        
+                threads.append(t)
         if name is None:
-            raise ValueError("No projectname found") 
+            raise ValueError("No project to import.") 
       
         env_path = os.path.join(destinationpath, name)
-        self.env = open_environment(env_path)
-        
-       
+        self.env = open_environment(env_path)        
         self.env.log.info('Importing from %s', sourcepath)
-        importdir = os.path.dirname(sourcepath)
         for mlist in mlists:
-            path = os.path.join(importdir, mlist.pop('mailbox'))
+            path = os.path.join(sourcepath, mlist.pop('mailbox'))
             if not os.path.exists(path):
                 self.env.log.error("Can't find mailbox %s from %s", path, sourcepath)
                 continue
@@ -126,11 +121,6 @@ class mbox_to_mailinglist_importer(object):
             else:
                 self.env.log.warning("No md5 found for %s in %s", path, sourcepath)
             t = Thread(target=self.read_file, args=(path, mlist))
-            t.daemon = True
-            t.start()            
-            threads.append(t)
-        else:
-            t = Thread(target=self.read_file, args=(path, None))
             t.daemon = True
             t.start()            
             threads.append(t)
