@@ -21,6 +21,7 @@ except ImportError:
 from trac.util.datefmt import utc
 from trac.env import open_environment
 from trac.resource import ResourceNotFound
+from trac.util.datefmt import utc, parse_date
 from trac.config import _TRUE_VALUES
 from mailinglistplugin.model import Mailinglist
 
@@ -132,8 +133,7 @@ class mbox_to_mailinglist_importer(object):
         xml.parse(sourcefile)
         for mlist in xml.findall('mailinglist'):
             attr = mlist.attrib
-            attr['date'] = datetime.strptime(attr['date'],"%Y-%m-%d %H:%M:%S" )
-            attr['date'] = attr['date'].replace(tzinfo=utc)
+            attr['date'] = parse_date(attr['date'],utc )
             attr['private'] = to_bool(attr['private'])
             attr['subscribers'] = []
             for sub in mlist.findall('subscriber'):
@@ -207,7 +207,7 @@ class mbox_to_mailinglist_importer(object):
                 self.env.log.exception('Failed to write %s from %s', path, mbox_file)
                 os.unlink(tmpfile)
                 return
-            finally:
+            else:
                 os.close(fp)
         else:
             path = mbox_file
