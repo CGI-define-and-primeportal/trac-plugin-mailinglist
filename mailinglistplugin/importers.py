@@ -3,11 +3,12 @@ import mailbox
 import time
 import tempfile
 import gzip
+import email
 
 from threading import Thread
 from dateutil.parser import parse as parse_date
 from datetime import datetime
-from ConfigParser import ConfigParser
+from ConfigParser import ConfigParser, NoSectionError
 
 try:
     from xml.etree import ElementTree as et
@@ -214,7 +215,7 @@ class mbox_to_mailinglist_importer(object):
             tmpfile = None
         self.env.log.info('Importing mbox %s', mbox_file)
                
-        mbox = mailbox.mbox(path)
+        mbox = mailbox.PortableUnixMailbox(open(path), email.message_from_file)
         inserted = 0
         errors = 0
         for mail in mbox:
