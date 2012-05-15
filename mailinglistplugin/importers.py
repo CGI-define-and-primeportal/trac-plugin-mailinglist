@@ -88,7 +88,13 @@ class mbox_to_mailinglist_importer(object):
         if os.path.exists(mailinglist_xml_filename):
             mlists = self.get_listdata_from_xml(mailinglist_xml_filename)
             self.xml_root = et.parse(mailinglist_xml_filename).getroot()
-            name = self.project_map.get(self.xml_root.get('project'), name)
+            account = self.xml_root.get('account')
+            project = self.xml_root.get('project')        
+            if project:
+                proj_name = "%s-%s"%(account, project)
+            else: 
+                proj_name = account
+            name  = self.project_map.get(proj_name, name)            
         elif os.path.exists(mailinglist_json_filename):
             mlists = self.get_listdata_from_xml(mailinglist_json_filename)
         else:
