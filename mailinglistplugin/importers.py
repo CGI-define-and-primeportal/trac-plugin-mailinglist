@@ -143,15 +143,16 @@ class mbox_to_mailinglist_importer(object):
             attr['date'] = parse_date(attr['date'],utc )
             attr['private'] = to_bool(attr['private'])
             attr['subscribers'] = []
-            for sub in mlist.findall('subscriber'):
-                subinfo = sub.attrib
-                for key in 'poster gposter decline'.split():
-                    subinfo[key] = to_bool(subinfo[key])
-                subinfo['groups'] = []
-                for group in sub.findall('group'):
-                    subinfo['groups'].append(group.attr['groupname'])
-                attr['subscribers'].append(subinfo)
-            yield attr
+            for subscriber in mlist.findall('subscribers'):
+                for sub in subscriber.findall('subscriber'):
+                    subinfo = sub.attrib
+                    for key in 'poster gposter decline'.split():
+                        subinfo[key] = to_bool(subinfo[key])
+                    subinfo['groups'] = []
+                    for group in sub.findall('group'):
+                        subinfo['groups'].append(group.attr['groupname'])
+                    attr['subscribers'].append(subinfo)
+                yield attr
     
     def get_listdata_from_json(self, sourcefile):
         lists = json.load(open(sourcefile))
@@ -204,6 +205,9 @@ class mbox_to_mailinglist_importer(object):
         for user in declines:
             if user not in declined_subscriptions:
                 mailinglist.unsubscribe(user=user)
+
+        for user_sub in subscribers:
+            mailinglist.subscribe(user=user_sub['authname'].lower(),poster=user_sub['poster'])            
        
         if mbox_file.endswith('.gz'):
             fp, path = tempfile.mkstemp()
