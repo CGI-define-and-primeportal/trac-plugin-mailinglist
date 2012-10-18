@@ -288,7 +288,7 @@ class MailinglistModule(Component):
             add_link(req, 'up', req.href.mailinglist(), _("List of mailinglists"))
 
             prevnext_nav(req, _("Newer conversations"), _("Older conversations"), 
-                         _("Back to Mailinglists"))
+                         (tag.i(class_="icon-arrow-left icon-blue")," Back to Mailinglists"))
 
             return 'mailinglist_conversations.html', data, None
         else:
