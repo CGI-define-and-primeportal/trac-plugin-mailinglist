@@ -7,11 +7,11 @@
       xmlns:i18n="http://genshi.edgewall.org/i18n">
   <xi:include href="admin.html" />
   <head>
-    <title>Mailinglists</title>
+    <title>Mailing Lists</title>
   </head>
 
   <body>
-    <h2>Manage Mailinglists</h2>
+    <h2>Manage Mailing Lists</h2>
     
     <py:choose test="view">
       <table py:when="'detail'">
@@ -19,7 +19,7 @@
 	  <td valign="top">
 	    <form class="mod" id="modmailinglist" method="post" action="">
 	      <fieldset>
-		<legend>Modify Mailinglist:</legend>
+		<legend>Modify Mailing List:</legend>
 		<div class="field">
 		  <label>Name:<br /><input type="text" name="name" value="$mailinglist.name"/></label>
 		</div>
@@ -51,7 +51,7 @@
 		    </option>
 		    <option value="PRIVATE" 
 			    selected="${mailinglist.private and 'selected' or None}">
-		      Private: Mailinglist members only
+		      Private: Mailing List members only
 		    </option>
 		  </select>
 		  </label>
@@ -200,7 +200,7 @@
       <py:otherwise>
         <form class="addnew" id="addmailinglist" method="post" action="">
           <fieldset>
-            <legend>Add Mailinglist:</legend>
+            <legend>Add Mailing List:</legend>
             <div class="field">
 	      <label>Name:<br /><input type="text" name="name" /></label>
             </div>
@@ -212,7 +212,7 @@
 	      <label>Access: <br/>
 	      <select name="private">
 		<option value="PUBLIC">Public: Open to non-members</option>
-		<option value="PRIVATE">Private: Mailinglist members only</option>
+		<option value="PRIVATE">Private: Mailing List members only</option>
 	      </select>
 	      </label>
 	    </div>
