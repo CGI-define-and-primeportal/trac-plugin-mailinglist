@@ -35,7 +35,7 @@ class maildir_to_mailinglist_importer:
     def import_project(self, sourcepath, destinationpath, name=None, **kwargs):
 
         if name is None:
-            raise KeyError("This importer requires a Trac project to already exist. Use --name to specify it's dir name.")
+            raise KeyError("This importer requires a Trac project to already exist. Use --name to specify its dir name.")
         
         env_path = os.path.join(destinationpath, name)
         mailinglist_name = os.path.basename(sourcepath.rstrip("/"))
