@@ -1,9 +1,10 @@
 jQuery(function($){
-    $('.moreinfo,.lessinfo').click(function(e) {
-        $(this).toggleClass('moreinfo lessinfo')
-        $(this).closest('tr').next().toggleClass('hidden');
-        return false;
-    })
+    $('.moreinfo').click(function(e) {
+      $("i", this).toggleClass("icon-resize-full icon-resize-small");
+      $(this).closest('tr').next().toggleClass('hidden');
+      $("span", this).text($("span", this).text() == "More info" ? "Less Info" : "More info");
+      if($(this).hasClass("last-row")) $(this).closest("tr").toggleClass("last-row");
+    });
     $('a.subscribe').click(function(e) {
         $(this).closest('form').submit();
         return false;
