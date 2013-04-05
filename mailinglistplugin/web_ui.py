@@ -165,11 +165,31 @@ class MailinglistModule(Component):
                 "offset": offset,
                 "limit": self.limit}
 
+        if req.method == 'POST':
+            mailinglist = Mailinglist.select_by_address(self.env,
+                                                    req.args['listemailaddress'], localpart=True)
+            req.perm(mailinglist.resource).require("MAILINGLIST_VIEW")
+            if req.args.get('unsubscribe'):
+                mailinglist.unsubscribe(user=req.authname)
+                add_notice(req, _('You have been unsubscribed from %s.' % mailinglist.name))
+            elif req.args.get('subscribe'):
+                mailinglist.subscribe(user=req.authname)
+                add_notice(req, _('You have been subscribed to %s.' % mailinglist.name))
+            else:
+                add_notice(req, _('Unable to subscribe to %s.' % mailinglist.name))
+
+            if 'listname' in req.args:
+                req.redirect(req.href.mailinglist(req.args['listname']))
+            elif 'conversationid' in req.args:
+                req.redirect(req.href.mailinglist(req.args['listemailaddress'], req.args['conversationid']))
+            else:
+                req.redirect(req.href.mailinglist())
+
         #for mailinglist in mailinglists:
         #    add_ctxtnav(req,
         #                _("List: %s") % mailinglist.name,
         #                req.href.mailinglist(mailinglist.emailaddress))
-        
+		
         if 'messageid' in req.args:
             message = MailinglistMessage(self.env, req.args['messageid'])
             # leaks the subject of the email in the error, wonder if
@@ -237,7 +257,20 @@ class MailinglistModule(Component):
 
             prevnext_nav(req, _("Newer conversation"), _("Older conversation"), 
                          _("Back to list of conversations"))
-            
+
+            if conversation.mailinglist.is_subscribed(req.authname):
+                add_ctxtnav(req, tag.form(tag.input(tag.input(tag.a(tag.i(class_='icon-eye-close'),
+                ' Unsubscribe', title='Unsubscribe from the %s mailing list' % conversation.mailinglist.name, class_='subscribe'),
+                value='Unsubscribe', name='unsubscribe', class_='hidden'),
+                value=conversation.mailinglist.emailaddress, name='listemailaddress', type='hidden'),
+                method_='post', action='', class_='hidden'))
+            else:
+                add_ctxtnav(req, tag.form(tag.input(tag.input(tag.a(tag.i(class_='icon-eye-open'),
+                ' Subscribe', title='Subscribe to the %s mailing list' % conversation.mailinglist.name, class_='subscribe'),
+                value='Subscribe', name='subscribe', class_='hidden'),
+                value=conversation.mailinglist.emailaddress, name='listemailaddress', type='hidden'),
+                method_='post', action='', class_='hidden'))
+
             return 'mailinglist_conversation.html', data, None
         elif 'listname' in req.args:
             mailinglist = Mailinglist.select_by_address(self.env,
@@ -246,7 +279,7 @@ class MailinglistModule(Component):
             req.perm(mailinglist.resource).require("MAILINGLIST_VIEW")
 
             data['mailinglist'] = mailinglist
-            
+
             results = Paginator(mailinglist.conversations(),
                             page - 1,
                             self.limit)
@@ -258,7 +291,7 @@ class MailinglistModule(Component):
             if results.has_previous_page:
                 prev_href = get_resource_url(self.env, mailinglist.resource, req.href, page=page - 1) 
                 add_link(req, 'prev', prev_href, _('Previous Page'))
-             
+
 
             pagedata = []
             shown_pages = results.get_shown_pages()
@@ -289,22 +322,25 @@ class MailinglistModule(Component):
 
             prevnext_nav(req, _("Newer conversations"), _("Older conversations"), ("Back to Mailinglists"))
 
+            # Check if user is already subscribed to mailing list 
+            if mailinglist.is_subscribed(req.authname):
+                add_ctxtnav(req, tag.form(tag.input(tag.input(tag.a(tag.i(class_='icon-eye-close'),
+                ' Unsubscribe', title='Unsubscribe from the %s mailing list' % mailinglist.name, class_='subscribe'),
+                value='Unsubscribe', name='unsubscribe', class_='hidden'),
+                value=mailinglist.emailaddress, name='listemailaddress', type='hidden'),
+                method_='post', action='', class_='hidden'))
+            else:
+                add_ctxtnav(req, tag.form(tag.input(tag.input(tag.a(tag.i(class_='icon-eye-open'),
+                ' Subscribe', title='Subscribe to the %s mailing list' % mailinglist.name, class_='subscribe'),
+                value='Subscribe', name='subscribe', class_='hidden'),
+                value=mailinglist.emailaddress, name='listemailaddress', type='hidden'),
+                method_='post', action='', class_='hidden'))
+
             return 'mailinglist_conversations.html', data, None
+
         else:
-            if req.method == 'POST':
-                mailinglist = Mailinglist.select_by_address(self.env,
-                                                            req.args['listemailaddress'], localpart=True)
-                req.perm(mailinglist.resource).require("MAILINGLIST_VIEW")
-                if req.args.get('unsubscribe'):
-                    mailinglist.unsubscribe(user=req.authname)
-                    add_notice(req, _('You have been unsubscribed from %s.' % mailinglist.name))
-                elif req.args.get('subscribe'):
-                    mailinglist.subscribe(user=req.authname)
-                    add_notice(req, _('You have been subscribed to %s.' % mailinglist.name))
-                req.redirect(req.href.mailinglist())
-                
             return 'mailinglist_list.html', data, None
-    
+
     # ITimelineEventProvider methods
 
     def get_timeline_filters(self, req):
