@@ -439,16 +439,6 @@ class Mailinglist(object):
                 res[username]["decline"] = True
         return res
 
-    def count_members(self):
-        """
-        Returns the number of active subscribers in the current list
-        """
-        active_members = []
-        for i, k in self.subscribers().iteritems():
-            if not k['decline']:
-                active_members.append(i)
-        return len(active_members)
-
     def subscribe(self, user=None, group=None, poster=False, set_decline=True, db=None):
         if user:
             @self.env.with_transaction(db)
