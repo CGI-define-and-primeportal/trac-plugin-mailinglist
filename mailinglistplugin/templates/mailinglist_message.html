@@ -1,0 +1,32 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:py="http://genshi.edgewall.org/"
+      xmlns:xi="http://www.w3.org/2001/XInclude">
+  <xi:include href="layout.html" />
+  <xi:include href="macros.html" />
+  <head>
+    <title>Mailing Lists Message: ${message.subject}</title>
+  </head>
+  <body>
+    <div id="content" class="conversation">
+      <h1>${message.subject}</h1>
+
+      <div class="subject" py:content="message.subject"/>
+      <div class="to">To: ${message.to_header}</div>
+      <div class="cc" py:if="message.cc_header">CC: ${message.cc_header}</div>
+      <div class="from">From: ${message.from_name} &lt;<a href="mailto:${message.from_email}" py:content="message.from_email"/>&gt;</div>
+      <div class="date">Date: ${format_datetime(message.date)}</div>
+      
+      <py:with vars="body, quote = message.split_body">
+	<pre py:content="body"/>
+	<pre py:content="quote"/>
+      </py:with>
+
+      <xi:include href="list_of_attachments.html"
+		  py:with="alist = attachments; foldable = True"/>
+
+    </div>
+
+  </body>
+</html>

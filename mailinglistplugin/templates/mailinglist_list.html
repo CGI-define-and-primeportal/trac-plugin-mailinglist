@@ -1,0 +1,94 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:py="http://genshi.edgewall.org/"
+      xmlns:xi="http://www.w3.org/2001/XInclude">
+  <xi:include href="layout.html" />
+  <xi:include href="macros.html" />
+  <head>
+    <title>Mailing Lists</title>
+  </head>
+  <body>
+    <div id="content" class="mailinglist">
+      <table class="mailinglists">
+	<thead>
+	  <tr>
+	    <th>Name</th>
+	    <th>Address</th>
+	    <th style="width: 20%">Subscribed</th>
+	    <th style="width: 10%">&nbsp;</th>
+	  </tr>
+	</thead>
+	<tbody>
+	  <py:for each="mailinglist in mailinglists">
+	    <tr class="listinfo">
+	      <td>
+		<a href="${url_of(mailinglist.resource)}" 
+		   py:content="name_of(mailinglist.resource)">
+		</a>
+	      </td>
+	      <td><a href="mailto:${mailinglist.addr()}" py:content="mailinglist.addr()"/></td>
+	      <td>
+		<py:choose test="mailinglist.is_subscribed(req.authname)">
+		  <form method="post" action="">
+		    <input type="hidden" name="listemailaddress" value="${mailinglist.emailaddress}"/>
+		    <span py:when="True">
+		      Subscribed
+		      <input type="submit" name="unsubscribe" value="${_('Unsubscribe')}"/>
+		    </span>
+		    <span py:when="False">
+		      <input type="submit" name="subscribe" value="${_('Subscribe')}"/>
+		    </span>
+		  </form>
+		</py:choose>
+	      </td>
+	      <td>
+		<a href="#" class="moreinfo">Info</a>
+	      </td>
+	    </tr>
+	    <tr class="hidden">
+	      <td colspan="3">
+		<dl>
+		  <dt>Description</dt>
+		  <dd>
+		    ${summary_of(mailinglist.resource)}
+		  </dd>
+		  <dt>Access</dt>
+		  <dd>${mailinglist.private and "Private" or "Public"}</dd>
+		  <dt>Post permissions</dt>
+		  <dd>
+		    ${{
+		    'RESTRICTED':'Restricted to posters',
+		    'MEMBERS':'Restricted to members',
+		    'OPEN':'Anyone may post'
+		    }[mailinglist.postperm]}
+		  </dd>
+		  <dt>Replies go to</dt>
+		  <dd>
+		    ${{
+		    'LIST':'List',
+		    'SENDER':'Sender'
+		    }[mailinglist.replyto]}
+		  </dd>
+		  <dt>Message threads</dt>
+		  <dd>${mailinglist.count_conversations()}</dd>
+		</dl>
+		<dl>
+		  <dt>Members</dt>
+		  <dd>
+		    <ul>
+		      <li py:for="subscriber, details in mailinglist.subscribers().items()"
+			  py:if="not details['decline']">
+			${subscriber}
+		      </li>
+		    </ul>
+		  </dd>
+		</dl>
+	      </td>
+	    </tr>
+	  </py:for>
+	</tbody>
+      </table>
+    </div>
+  </body>
+</html>

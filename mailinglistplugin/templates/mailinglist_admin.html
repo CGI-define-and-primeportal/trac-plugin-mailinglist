@@ -1,0 +1,282 @@
+<!DOCTYPE html
+    PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:xi="http://www.w3.org/2001/XInclude"
+      xmlns:py="http://genshi.edgewall.org/"
+      xmlns:i18n="http://genshi.edgewall.org/i18n">
+  <xi:include href="admin.html" />
+  <head>
+    <title>Mailing Lists</title>
+  </head>
+
+  <body>
+    <h2>Manage Mailing Lists</h2>
+    
+    <py:choose test="view">
+      <table py:when="'detail'">
+	<tr>
+	  <td valign="top">
+	    <form class="mod" id="modmailinglist" method="post" action="">
+	      <fieldset>
+		<legend>Modify Mailing List:</legend>
+		<div class="field">
+		  <label>Name:<br /><input type="text" name="name" value="$mailinglist.name"/></label>
+		</div>
+		<div class="field">
+		  <label>Email address:<br />
+		  <input type="text" name="emailaddress" value="$mailinglist.emailaddress" 
+			 disabled="${'TRAC_ADMIN' not in req.perm and 'disabled' or None}"/>
+		  </label><span style="font-family: courier;">@${email_domain}</span>
+		</div>
+		<div class="field">
+		  <fieldset class="iefix">
+		    <label for="description" i18n:msg="">
+		      Description (you may use
+		      <a tabindex="42" href="${href.wiki('WikiFormatting')}">WikiFormatting</a>
+		      here):
+		    </label>
+		    <p>
+		      <textarea id="description" name="description" class="wikitext trac-resizable"
+				rows="6" cols="60">$mailinglist.description</textarea>
+		    </p>
+		  </fieldset>
+		</div>
+		<div class="field">
+		  <label>Access: <br/>
+		  <select name="private">
+		    <option value="PUBLIC" 
+			    selected="${not mailinglist.private and 'selected' or None}">
+		      Public: Open to non-members
+		    </option>
+		    <option value="PRIVATE" 
+			    selected="${mailinglist.private and 'selected' or None}">
+		      Private: Mailing List members only
+		    </option>
+		  </select>
+		  </label>
+		</div>
+		<div class="field">
+		  <label>Posting restricted to: <br/>
+		  <select name="postperm">
+		    <option value="MEMBERS" 
+			    selected="${mailinglist.postperm == 'MEMBERS' and 'selected' or None}">
+		      Members
+		    </option>
+		    <option value="RESTRICTED"
+			    selected="${mailinglist.postperm == 'RESTRICTED' and 'selected' or None}">
+		      Posters
+		    </option>
+		    <option value="OPEN"
+			    selected="${mailinglist.postperm == 'OPEN' and 'selected' or None}">
+		      Anyone may post
+		    </option>
+		  </select>
+		  </label>
+		</div>
+		<div class="field">
+		  <label>Replies to go: <br/>
+		  <select name="replyto">
+		    <option value="LIST" 
+			    selected="${mailinglist.replyto == 'LIST' and 'selected' or None}">
+		      List
+		    </option>
+		    <option value="SENDER" 
+			    selected="${mailinglist.replyto == 'SENDER' and 'selected' or None}">
+		      Sender
+		    </option>
+		  </select>
+		  </label>
+		</div>
+		<div class="buttons">
+		  <input type="submit" name="cancel" value="${_('Cancel')}" />
+		  <input type="submit" name="save" value="${_('Save')}" />
+		</div>
+	      </fieldset>
+	    </form>
+	  </td>
+	  <td valign="top">
+	    <fieldset>
+	      <legend>Group subscribers:</legend>
+	      <form class="mod" id="modmailinglistgroupsubscriber" method="post" action="">
+		<div class="field">
+		  <label>Group:<br />
+		  <input type="text" name="groupname" py:if="groups is None"/>
+		  <select name="groupname" py:if="groups is not None">
+		    <option py:for="groupname in groups" value="${groupname}">
+		      ${groupname.replace('_',' ').title()}
+		    </option>
+		  </select>
+		  </label>
+		</div>
+		<div class="buttons">
+		  <input type="submit" name="subscribegroup" value="${_('Subscribe Group')}"/>
+		</div>
+	      </form>
+	      <form id="subscribers_groups_table" method="post" action="">
+		<table class="listing">
+		  <thead>
+		    <tr>
+		      <th>&nbsp;</th>
+		      <th>Group name</th>
+		      <th py:if="mailinglist.postperm == 'RESTRICTED'">Poster</th>
+		    </tr>
+		  </thead>
+		  <tbody>
+		    <tr py:for="groupname, poster in mailinglist.groups()">
+		      <td><input type="checkbox" name="sel" value="${groupname}"/></td>
+		      <td>${groupname.replace('_',' ').title()}</td>
+		      <td py:if="mailinglist.postperm == 'RESTRICTED'">
+			<input type="checkbox" 
+			       name="sel"
+			       value="${groupname}"
+			       checked="${poster and 'checked' or None}"/>
+		      </td>
+		    </tr>
+		  </tbody>
+		</table>
+		<div class="buttons">
+		  <input type="submit" name="removegroups" value="${_('Remove selected groups')}" />
+		  <input py:if="mailinglist.postperm == 'RESTRICTED'"
+			 type="submit" name="updatepostergroups" value="${_('Update posters')}" />
+		</div>
+	      </form>
+	    </fieldset>
+
+	    <fieldset>
+	      <legend>Individual subscribers:</legend>
+	      <form class="mod" id="modmailinglistusersubscriber" method="post" action="">
+		<div class="field">
+		  <label>User:<br /><input type="text" name="username"/></label>
+		</div>
+		<div class="buttons">
+		  <input type="submit" name="subscribeuser" value="${_('Subscribe User')}"/>
+		</div>
+	      </form>
+	      <form id="subscribers_users_table" method="post" action="">
+		<table class="listing">
+		  <thead>
+		    <tr>
+		      <th>&nbsp;</th>
+		      <th>Username</th><th>Subscription</th>
+		      <th py:if="mailinglist.postperm == 'RESTRICTED'">Poster</th>
+		      <th>Declined</th>
+		    </tr>
+		  </thead>
+		  <tbody py:with="subscribers = mailinglist.subscribers()">
+		    <tr py:for="subscriber in sorted(subscribers.keys())">
+		      <td><input type="checkbox" name="sel" value="${subscriber}"/></td>
+		      <td>${subscriber}</td>
+		      <td>
+			<py:if test="subscribers[subscriber]['individual']">
+			  Individual
+			</py:if>
+			<py:if test="not subscribers[subscriber]['individual']">
+			  Group (${", ".join([g.replace('_',' ').title() for g in subscribers[subscriber]['groups']])})
+			</py:if>
+		      </td>
+		      <td py:if="mailinglist.postperm == 'RESTRICTED'">
+			<input type="checkbox" 
+			       disabled="${not subscribers[subscriber]['individual'] and 'disabled' or None}"
+			       name="sel"
+			       value="${subscriber}"
+			       checked="${subscribers[subscriber]['poster'] and 'checked' or None}"/>
+		      </td>
+		      <td>${subscribers[subscriber]['decline'] and 'Declined' or None}</td>
+		    </tr>
+		  </tbody>
+		</table>
+		<div class="buttons">
+		  <input type="submit" name="removeusers" value="${_('Remove selected users')}" />
+		  <input py:if="mailinglist.postperm == 'RESTRICTED'"
+			 type="submit" name="updateposterusers" value="${_('Update posters')}" />
+		</div>
+	      </form>
+	    </fieldset>
+	  </td>
+	</tr>
+      </table>
+
+      <py:otherwise>
+        <form class="addnew" id="addmailinglist" method="post" action="">
+          <fieldset>
+            <legend>Add Mailing List:</legend>
+            <div class="field">
+	      <label>Name:<br /><input type="text" name="name" /></label>
+            </div>
+            <div class="field">
+	      <label>Email address:<br /><input type="text" name="emailaddress" size="10" /></label>
+	      <span style="font-family: courier;">@${email_domain}</span>
+            </div>
+	    <div class="field">
+	      <label>Access: <br/>
+	      <select name="private">
+		<option value="PUBLIC">Public: Open to non-members</option>
+		<option value="PRIVATE">Private: Mailing List members only</option>
+	      </select>
+	      </label>
+	    </div>
+	    <div class="field">
+	      <label>Posting restricted to: <br/>
+	      <select name="postperm">
+		<option value="MEMBERS">Members</option>
+		<option value="RESTRICTED">Posters</option>
+		<option value="OPEN">Anyone may post</option>
+	      </select>
+	      </label>
+	    </div>
+	    <div class="buttons">
+	      <input type="submit" name="add" value="${_('Add')}"/>
+            </div>
+          </fieldset>
+        </form>
+
+        <py:choose>
+          <form py:when="mailinglists" id="mailinglist_table" method="post" action="">
+            <table class="listing" id="mailinglistlist">
+              <thead>
+		<tr>
+		  <th class="sel" py:if="'TRAC_ADMIN' in req.perm">&nbsp;</th>
+		  <th>Name</th><th>Address</th><th>Access</th><th>Posting</th><th>Messages</th>
+		</tr>
+              </thead>
+              <tbody>
+                <tr py:for="list in mailinglists">
+		  <td class="sel" py:if="'TRAC_ADMIN' in req.perm">
+		    <input type="checkbox" name="sel" value="$list.emailaddress" />
+		  </td>
+                  <td class="name">
+                    <a href="${href.admin('mailinglist','lists',list.emailaddress)}">$list.name</a>
+                  </td>
+                  <td class="address"><a href="mailto:${list.addr()}">${list.addr()}</a></td>
+                  <td class="access">${list.private and "Private" or "Public"}</td>
+		  <td class="posting">
+		    ${{
+		    'RESTRICTED':'Restricted to posters',
+		    'MEMBERS':'Restricted to members',
+		    'OPEN':'Anyone may post'
+		    }[list.postperm]}
+		  </td>
+                  <td class="messages">${list.count_messages()}</td>
+                </tr>
+              </tbody>
+            </table>
+            <div class="buttons" py:if="'TRAC_ADMIN' in req.perm">
+              <input type="submit" name="remove" value="${_('Remove selected items')}" />
+            </div>
+            <p class="help">
+            </p>
+          </form>
+
+          <p py:otherwise="" class="help">
+	    No mailinglists are configured.
+          </p>
+        </py:choose>
+      </py:otherwise>
+    </py:choose>
+
+    
+
+  </body>
+
+</html>
