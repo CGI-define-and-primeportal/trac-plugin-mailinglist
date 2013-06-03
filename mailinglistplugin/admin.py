@@ -17,7 +17,7 @@ class MailinglistAdmin(Component):
     
     def get_admin_panels(self, req):
         if 'MAILINGLIST_ADMIN' in req.perm:
-            yield ('mailinglist', 'Mailinglist', 'lists', 'Lists') 
+            yield ('mailinglist', 'Mailing List', 'lists', 'Lists') 
 
     def render_admin_panel(self, req, cat, page, mailinglist_emailpart):
         req.perm.require('MAILINGLIST_ADMIN')
