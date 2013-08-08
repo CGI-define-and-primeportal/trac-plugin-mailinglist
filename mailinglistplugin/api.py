@@ -168,7 +168,7 @@ class MailinglistSystem(Component):
             return False
 
     def upgrade_environment(self, db):
-        self.log.debug("Upgrading schema for metadata plugin")
+        self.log.debug("Upgrading schema for mailinglist plugin")
         db_backend, _ = DatabaseManager(self.env)._get_connector()
         cursor = db.cursor()
         for table in self._schema:
