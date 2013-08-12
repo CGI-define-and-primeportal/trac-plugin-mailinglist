@@ -2,7 +2,7 @@ from trac.wiki.macros import WikiMacroBase
 from trac.wiki.api import parse_args
 from trac.wiki.formatter import system_message
 from trac.resource import ResourceSystem, Resource, ResourceNotFound, get_resource_url
-from trac.util.datefmt import format_datetime, pretty_timedelta
+from trac.util.datefmt import dateinfo
 
 from genshi.builder import tag
 
@@ -76,8 +76,9 @@ Some other possible ways to include mailinglist content in a page:
                     tag.a(tag.span(message.subject, class_="messagesubject"),
                           href=get_resource_url(self.env, message.resource, req.href)),
                     " (",
-                    tag.span(pretty_timedelta(message.date), class_="messageage"),
-                    " ago)"))
+                    dateinfo(message.date),
+                    ")",
+                    ))
             ul.append(tag.li(tag.a("(%d messages...)" % instance.count_messages(insubject=kwargs.get('insubject', None)),
                                    href=get_resource_url(self.env, instance.resource, req.href))))
             return tag.div("Mailinglist: ",
@@ -108,7 +109,7 @@ Some other possible ways to include mailinglist content in a page:
                 tag.div("From: ",
                         tag.a(instance.from_name, href="mailto:%s" % instance.from_email)),
                 tag.div("To: ", instance.to_header),
-                tag.div("Date: %s" % format_datetime(instance.date, tzinfo=req.tz)),
+                tag.div("Date: ", dateinfo(instance.date)),
                 tag.div(textelement),
                 class_="mailinglistmessage")            
             
