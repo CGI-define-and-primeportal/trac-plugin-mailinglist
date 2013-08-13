@@ -176,7 +176,7 @@ class Mailinglist(object):
             conv.insert()
             new = True
 
-        self.env.log.debug("Using conversation %s (new: %s)" % (conv, new))
+        self.env.log.debug("Using conversation %s (new: %s)", conv, new)
 
         # Extract the text/plain body
         body = ''
