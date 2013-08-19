@@ -12,7 +12,7 @@ from mailinglistplugin.model import Mailinglist
 from dateutil.parser import parse as parse_date
 from datetime import datetime
 try:
-    from xml.etree import ElementTree as et
+    from xml.etree import cElementTree as et
     import json
     from hashlib import md5
 except ImportError:
