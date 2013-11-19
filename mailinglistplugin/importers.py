@@ -11,13 +11,12 @@ from trac.config import _TRUE_VALUES
 from mailinglistplugin.model import Mailinglist
 from dateutil.parser import parse as parse_date
 from datetime import datetime
+import simplejson as json
 try:
     from xml.etree import cElementTree as et
-    import json
     from hashlib import md5
 except ImportError:
     from elementtree import ElementTree as et
-    import simplejson as json
     from md5 import new as md5
 def to_bool(s):
     try:
