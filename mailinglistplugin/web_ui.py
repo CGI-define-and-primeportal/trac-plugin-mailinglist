@@ -166,24 +166,53 @@ class MailinglistModule(Component):
                 "limit": self.limit}
 
         if req.method == 'POST':
-            mailinglist = Mailinglist.select_by_address(self.env,
-                                                    req.args['listemailaddress'], localpart=True)
-            req.perm(mailinglist.resource).require("MAILINGLIST_VIEW")
-            if req.args.get('unsubscribe'):
-                mailinglist.unsubscribe(user=req.authname)
-                add_notice(req, _('You have been unsubscribed from %s.' % mailinglist.name))
-            elif req.args.get('subscribe'):
-                mailinglist.subscribe(user=req.authname)
-                add_notice(req, _('You have been subscribed to %s.' % mailinglist.name))
-            else:
-                add_notice(req, _('Unable to subscribe to %s.' % mailinglist.name))
 
-            if 'listname' in req.args:
-                req.redirect(req.href.mailinglist(req.args['listname']))
-            elif 'conversationid' in req.args:
-                req.redirect(req.href.mailinglist(req.args['listemailaddress'], req.args['conversationid']))
+            username = req.authname
+            if 'subscribe' in req.args:
+                subscribe = True
+                unsubscribe = False
+                mailinglist_email = req.args.get('subscribe')
+            elif 'unsubscribe' in req.args:
+                subscribe = False
+                unsubscribe = True
+                mailinglist_email = req.args.get('unsubscribe')
             else:
+                # at the moment we only post subscription info to
+                # mailing list page - so if there is none in req.args we 
+                # can just redirect to mailing list page
                 req.redirect(req.href.mailinglist())
+
+            # get mailing list object and check permissions
+            mailinglist = Mailinglist.select_by_address(self.env,
+                                                    mailinglist_email, localpart=True)
+            req.perm(mailinglist.resource).require("MAILINGLIST_VIEW")
+
+            if subscribe:
+                mailinglist.subscribe(user=username)
+                # subscribe does not return a value to indicate if it 
+                # was successful, so we have to explicitly check
+                if mailinglist.is_subscribed(username):
+                    add_notice(req, _('You have been subscribed to %s.' % mailinglist.name))
+                else:
+                    add_notice(req, _('Unable to subscribe to %s.' % mailinglist.name))
+            elif unsubscribe:
+                mailinglist.unsubscribe(user=username)
+                # unsubscribe does not return a value to indicate if it 
+                # was successful, so we have to explicitly check
+                if not mailinglist.is_subscribed(username):
+                    add_notice(req, _('You have been unsubscribed from %s.' % mailinglist.name))
+                else:
+                    add_notice(req, _('Unable to unsubscribe from %s.' % mailinglist.name))
+
+            if req.path_info.endswith('/mailinglist'):
+                 # overview mailing list page
+                req.redirect(req.href.mailinglist())
+            elif 'conversationid' in req.args:
+                # individual mailing list conversation log
+                req.redirect(req.href.mailinglist(mailinglist_email, req.args['conversationid']))
+            else:
+                # individual mailing list homepage
+                req.redirect(req.href.mailinglist(mailinglist_email))
 
         #for mailinglist in mailinglists:
         #    add_ctxtnav(req,
@@ -269,20 +298,22 @@ class MailinglistModule(Component):
                 href=req.href.admin('mailinglist', 'lists', conversation.mailinglist.emailaddress),
                 title='Manage and subscribe users to the %s mailing list' % conversation.mailinglist.name))
 
+
+            # Check if user is already subscribed to mailing list 
+            # and add the appropriate subscribe / unsubscribe ribbon option
             if conversation.mailinglist.is_subscribed(req.authname):
-                add_ctxtnav(req, tag.form(tag.input(tag.input(tag.a(tag.i(class_='icon-eye-close'),
-                ' Unsubscribe', title='Unsubscribe from the %s mailing list' % conversation.mailinglist.name, class_='subscribe'),
-                value='Unsubscribe', name='unsubscribe', class_='hidden'),
-                value=conversation.mailinglist.emailaddress, name='listemailaddress', type='hidden'),
-                method_='post', action='', class_='hidden'))
+                add_ctxtnav(req, tag.form(tag.input(tag.a(tag.i(class_='icon-eye-close'),
+                ' Unsubscribe', title='Unsubscribe from the %s mailing list' % conversation.mailinglist.name, id='subscribe-link'),
+                name='unsubscribe', value=conversation.mailinglist.emailaddress, class_='hidden'),
+                method_='post', action='', id='subscribe-form', class_='hidden'))
             else:
-                add_ctxtnav(req, tag.form(tag.input(tag.input(tag.a(tag.i(class_='icon-eye-open'),
-                ' Subscribe', title='Subscribe to the %s mailing list' % conversation.mailinglist.name, class_='subscribe'),
-                value='Subscribe', name='subscribe', class_='hidden'),
-                value=conversation.mailinglist.emailaddress, name='listemailaddress', type='hidden'),
-                method_='post', action='', class_='hidden'))
+                add_ctxtnav(req, tag.form(tag.input(tag.a(tag.i(class_='icon-eye-open'),
+                ' Subscribe', title='Subscribe to the %s mailing list' % conversation.mailinglist.name, id='subscribe-link'),
+                name='subscribe', value=conversation.mailinglist.emailaddress, class_='hidden'),
+                method_='post', action='', id='subscribe-form', class_='hidden'))
 
             return 'mailinglist_conversation.html', data, None
+
         elif 'listname' in req.args:
             mailinglist = Mailinglist.select_by_address(self.env,
                                                         req.args['listname'], localpart=True)
@@ -339,18 +370,17 @@ class MailinglistModule(Component):
                 title='Manage and subscribe users to the %s mailing list' % mailinglist.name))
 
             # Check if user is already subscribed to mailing list 
+            # and add the appropriate subscribe / unsubscribe ribbon option
             if mailinglist.is_subscribed(req.authname):
-                add_ctxtnav(req, tag.form(tag.input(tag.input(tag.a(tag.i(class_='icon-eye-close'),
-                ' Unsubscribe', title='Unsubscribe from the %s mailing list' % mailinglist.name, class_='subscribe'),
-                value='Unsubscribe', name='unsubscribe', class_='hidden'),
-                value=mailinglist.emailaddress, name='listemailaddress', type='hidden'),
-                method_='post', action='', class_='hidden'))
+                add_ctxtnav(req, tag.form(tag.input(tag.a(tag.i(class_='icon-eye-close'),
+                ' Unsubscribe', title='Unsubscribe from the %s mailing list' % mailinglist.name, id='subscribe-link'),
+                name='unsubscribe', value=mailinglist.emailaddress, class_='hidden'),
+                method_='post', action='', id='subscribe-form', class_='hidden'))
             else:
-                add_ctxtnav(req, tag.form(tag.input(tag.input(tag.a(tag.i(class_='icon-eye-open'),
-                ' Subscribe', title='Subscribe to the %s mailing list' % mailinglist.name, class_='subscribe'),
-                value='Subscribe', name='subscribe', class_='hidden'),
-                value=mailinglist.emailaddress, name='listemailaddress', type='hidden'),
-                method_='post', action='', class_='hidden'))
+                add_ctxtnav(req, tag.form(tag.input(tag.a(tag.i(class_='icon-eye-open'),
+                ' Subscribe', title='Subscribe to the %s mailing list' % mailinglist.name, id='subscribe-link'),
+                name='subscribe', value=mailinglist.emailaddress, class_='hidden'),
+                method_='post', action='', id='subscribe-form', class_='hidden'))
 
             return 'mailinglist_conversations.html', data, None
 

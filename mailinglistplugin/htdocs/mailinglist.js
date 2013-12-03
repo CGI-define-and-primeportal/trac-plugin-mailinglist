@@ -17,4 +17,8 @@ jQuery(function($){
     $(".morebody").click(function(e){
     	$(this).next('pre').toggleClass('hidden');
     });
+    $("#subscribe-link").click(function(){
+      $("#subscribe-form").submit()
+    });
+
 })
