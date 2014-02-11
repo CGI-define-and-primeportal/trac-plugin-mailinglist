@@ -274,14 +274,14 @@ class MailinglistModule(Component):
                 prev_href = get_resource_url(self.env, conversation.resource, req.href, page=page - 1) 
                 add_link(req, 'prev', prev_href, _('Previous Page'))
             
-            pagedata = []
             shown_pages = results.get_shown_pages()
-            for p in shown_pages:
-                page_href = get_resource_url(self.env, conversation.resource, req.href, page=p)
-                pagedata.append([page_href, None, str(p),
-                                 _('Page %(num)d', num=p)])
-            fields = ['href', 'class', 'string', 'title']
-            results.shown_pages = [dict(zip(fields, p)) for p in pagedata]
+            pagedata = [{'href': get_resource_url(self.env,
+                                                  conversation.resource,
+                                                  req.href, page=page),
+                         'class': None, 'string': str(page),
+                         'title': _('Page %(num)d', num=page)}
+                        for page in shown_pages]
+            results.shown_pages = pagedata
             results.current_page = {'href': None, 'class': 'current',
                                     'string': str(results.page + 1),
                                     'title': None}
@@ -334,15 +334,14 @@ class MailinglistModule(Component):
                 prev_href = get_resource_url(self.env, mailinglist.resource, req.href, page=page - 1) 
                 add_link(req, 'prev', prev_href, _('Previous Page'))
 
-
-            pagedata = []
             shown_pages = results.get_shown_pages()
-            for p in shown_pages:
-                page_href = get_resource_url(self.env, mailinglist.resource, req.href, page=p)
-                pagedata.append([page_href, None, str(p),
-                                 _('Page %(num)d', num=p)])
-            fields = ['href', 'class', 'string', 'title']
-            results.shown_pages = [dict(zip(fields, p)) for p in pagedata]
+            pagedata = [{'href': get_resource_url(self.env,
+                                                  mailinglist.resource,
+                                                  req.href, page=page),
+                         'class': None, 'string': str(page),
+                         'title': _('Page %(num)d', num=page)}
+                        for page in shown_pages]
+            results.shown_pages = pagedata
             results.current_page = {'href': None, 'class': 'current',
                                     'string': str(results.page + 1),
                                     'title': None}

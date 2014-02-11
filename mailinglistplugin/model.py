@@ -443,10 +443,8 @@ class Mailinglist(object):
         """
         Returns the number of active subscribers in the current list
         """
-        active_members = []
-        for i, k in self.subscribers().iteritems():
-            if not k['decline']:
-                active_members.append(i)
+        active_members = [i for i, k in self.subscribers().iteritems()
+                          if not k['decline']]
         return len(active_members)
 
     def subscribe(self, user=None, group=None, poster=False, set_decline=True, db=None):

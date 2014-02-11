@@ -72,9 +72,8 @@ def decode_header(text):
         """
         if not text:
             return text
-        res = []
-        for part, charset in email.Header.decode_header(text):
-            res.append(unicode(part, charset and charset or 'ascii', 'ignore'))
+        res = (unicode(part, charset and charset or 'ascii', 'ignore')
+               for part, charset in email.Header.decode_header(text))
         return ' '.join(res)
 
 def parse_rfc2822_date(text):

@@ -128,17 +128,22 @@ class mbox_to_mailinglist_importer(object):
             attr = mlist.attrib
             attr['date'] = parse_date(attr['date'])
             attr['private'] = to_bool(attr['private'])
-            attr['subscribers'] = []
-            for sub in mlist.findall('subscriber'):
-                subinfo = sub.attrib
-                for key in 'poster gposter decline'.split():
-                    subinfo[key] = to_bool(subinfo[key])
-                subinfo['groups'] = []
-                for group in sub.findall('group'):
-                    subinfo['groups'].append(group.attr['groupname'])
-                attr['subscribers'].append(subinfo)
+            attr['subscribers'] = [self._subinfo(sub)
+                                   for sub in mlist.findall('subscriber')]
             yield attr
     
+    @staticmethod
+    def _subinfo(sub):
+        subinfo = sub.attrib
+        subinfo.update({
+            'poster': to_bool(subinfo['poster']),
+            'gposter': to_bool(subinfo['gposter']),
+            'decline': to_bool(subinfo['decline']),
+            'groups': [group.attr['groupname']
+                       for group in sub.findall('group')],
+            })
+        return subinfo
+
     def get_listdata_from_json(self, sourcefile):
         lists = json.load(open(sourcefile))
         for mlist in lists:
