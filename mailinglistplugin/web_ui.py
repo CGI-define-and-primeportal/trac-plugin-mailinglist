@@ -167,7 +167,6 @@ class MailinglistModule(Component):
 
         if req.method == 'POST':
 
-            username = req.authname
             if 'subscribe' in req.args:
                 subscribe = True
                 unsubscribe = False
@@ -188,18 +187,18 @@ class MailinglistModule(Component):
             req.perm(mailinglist.resource).require("MAILINGLIST_VIEW")
 
             if subscribe:
-                mailinglist.subscribe(user=username)
+                mailinglist.subscribe(user=req.authname)
                 # subscribe does not return a value to indicate if it 
                 # was successful, so we have to explicitly check
-                if mailinglist.is_subscribed(username):
+                if mailinglist.is_subscribed(req.authname):
                     add_notice(req, _('You have been subscribed to %s.' % mailinglist.name))
                 else:
                     add_notice(req, _('Unable to subscribe to %s.' % mailinglist.name))
             elif unsubscribe:
-                mailinglist.unsubscribe(user=username)
+                mailinglist.unsubscribe(user=req.authname)
                 # unsubscribe does not return a value to indicate if it 
                 # was successful, so we have to explicitly check
-                if not mailinglist.is_subscribed(username):
+                if not mailinglist.is_subscribed(req.authname):
                     add_notice(req, _('You have been unsubscribed from %s.' % mailinglist.name))
                 else:
                     add_notice(req, _('Unable to unsubscribe from %s.' % mailinglist.name))
