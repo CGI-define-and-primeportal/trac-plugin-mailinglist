@@ -422,7 +422,7 @@ class MailinglistModule(Component):
                 if 'MAILINGLIST_VIEW' in req.perm(m):
                     yield ('mailinglist', 
                            datetime.fromtimestamp(date, utc),
-                           "%s <%s>" % (from_name, from_email),
+                           "%s" % (from_name,),
                            (mid,
                             subject, 
                             body.lstrip()[:200],
