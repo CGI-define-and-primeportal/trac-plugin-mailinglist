@@ -10,6 +10,7 @@ jQuery(function($){
         return false;
     })
     $(".viewinfo").click(function(e){
+      e.preventDefault();
     	var parent = $(this).closest('div').parent();
     	parent.next('.information').toggleClass('hidden');
     	
