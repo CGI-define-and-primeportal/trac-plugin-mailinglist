@@ -6,8 +6,14 @@ from trac.mimeview.api import Mimeview, Context
 from trac.util.datefmt import utc, to_timestamp
 from trac.attachment import Attachment
 from trac.util.translation import _
+from trac.util.html import TracHTMLSanitizer, plaintext
 from datetime import datetime
 from cStringIO import StringIO
+
+from genshi.core import Stream, Markup
+from genshi.input import HTMLParser, ParseError
+from genshi.builder import tag
+from genshi.filters.transform import Transformer
 
 from mailinglistplugin.utils import wrap_and_quote, parse_rfc2822_date, decode_header
 import codecs
@@ -16,6 +22,8 @@ import email
 import re
 
 from mailinglistplugin.api import MailinglistSystem
+from mailinglistplugin.html import RemoveOutlookQuotedMails
+
 from trac.perm import PermissionSystem
 
 class Mailinglist(object):
@@ -667,7 +675,38 @@ class MailinglistMessage(object):
     def get_split_body(self):
         return wrap_and_quote(self.body, 78)
     split_body = property(get_split_body)
-    
+
+    def get_genshi_markup(self):
+        _sanitizer = TracHTMLSanitizer()
+        _trimmer   = RemoveOutlookQuotedMails()
+
+        html = None
+        encoding = None
+        msg = email.message_from_string(self.raw.bytes)
+        for part in msg.walk():
+            if part.get_content_type() == 'text/html':
+                html = part.get_payload(decode=True) # decode quoted-printable
+                encoding = part.get_param('charset')
+                break
+
+        if html and encoding:
+            try:
+                stream = Stream(HTMLParser(StringIO(html), encoding=encoding))
+                content = (stream \
+                               | Transformer().select('.//body/*').invert().remove() \
+                               | _sanitizer \
+                               | _trimmer \
+                               ).render('xhtml', encoding=None)
+                if content.strip():
+                    return Markup(content)
+            except ParseError:
+                self.env.log.exception("Problem parsing HTML for %s", self)
+
+        self.env.log.warn("No HTML content usable, using text body for %s", self)
+        return tag.pre(plaintext(self.body))
+
+    genshi_markup = property(get_genshi_markup)
+
     def delete(self, db=None):
         """Delete a mailinglistmessage"""
         @self.env.with_transaction(db)
