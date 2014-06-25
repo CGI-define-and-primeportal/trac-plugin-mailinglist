@@ -786,7 +786,7 @@ class MailinglistConversation(object):
                            'FROM mailinglistconversations WHERE id = %s', (id,))
             row = cursor.fetchone()
             if row:
-                self.id = id
+                self.id = int(id)
                 (mailinglistid, date, self.subject, self._first) = row 
                 self.date = datetime.fromtimestamp(date, utc)
                 self.mailinglist = Mailinglist(env, mailinglistid)
@@ -808,6 +808,9 @@ class MailinglistConversation(object):
         return self.id is not None
 
     exists = property(__nonzero__)
+
+    def __eq__(self, other):
+        return self.id == other.id
 
     def delete(self, db=None):
         """Delete a mailinglistconversation"""
@@ -877,6 +880,18 @@ class MailinglistConversation(object):
             self._first = message.id
 
     first = property(get_first, set_first)
+
+    def nearby_conversations(self, limit=6):
+        db = self.env.get_read_db()
+        cursor = db.cursor()
+        cursor.execute("""SELECT id FROM mailinglistconversations
+        WHERE list = %s AND date < %s ORDER BY date DESC LIMIT %s""", (self.mailinglist.id, to_timestamp(self.date), limit / 2))
+        for row in reversed(cursor.fetchall()):
+            yield MailinglistConversation(self.env, row[0])
+        cursor.execute("""SELECT id FROM mailinglistconversations
+        WHERE list = %s AND date >= %s ORDER BY date LIMIT %s""", (self.mailinglist.id, to_timestamp(self.date), limit / 2))
+        for row in cursor:
+            yield MailinglistConversation(self.env, row[0])
 
     def count_messages(self):
         db = self.env.get_read_db()
