@@ -676,9 +676,12 @@ class MailinglistMessage(object):
         return wrap_and_quote(self.body, 78)
     split_body = property(get_split_body)
 
-    def get_genshi_markup(self, href):
+    def get_genshi_markup(self, href, move_quotes=True):
         _sanitizer = TracHTMLSanitizer()
-        _trimmer   = RemoveOutlookQuotedMails()
+        if move_quotes:
+            _trimmer   = RemoveOutlookQuotedMails()
+        else:
+            _trimmer   = Transformer()            
         _imghandler = ConvertImgSourcesFromCID(href, self.env, self.resource)
 
         html = None
