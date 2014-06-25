@@ -22,7 +22,7 @@ import email
 import re
 
 from mailinglistplugin.api import MailinglistSystem
-from mailinglistplugin.html import RemoveOutlookQuotedMails
+from mailinglistplugin.html import RemoveOutlookQuotedMails, ConvertImgSourcesFromCID
 
 from trac.perm import PermissionSystem
 
@@ -676,9 +676,10 @@ class MailinglistMessage(object):
         return wrap_and_quote(self.body, 78)
     split_body = property(get_split_body)
 
-    def get_genshi_markup(self):
+    def get_genshi_markup(self, href):
         _sanitizer = TracHTMLSanitizer()
         _trimmer   = RemoveOutlookQuotedMails()
+        _imghandler = ConvertImgSourcesFromCID(href, self.env, self.resource)
 
         html = None
         encoding = None
@@ -694,6 +695,7 @@ class MailinglistMessage(object):
                 stream = Stream(HTMLParser(StringIO(html), encoding=encoding))
                 content = (stream \
                                | Transformer().select('.//body/*').invert().remove() \
+                               | _imghandler \
                                | _sanitizer \
                                | _trimmer \
                                ).render('xhtml', encoding=None)
@@ -704,8 +706,6 @@ class MailinglistMessage(object):
 
         self.env.log.warn("No HTML content usable, using text body for %s", self)
         return tag.pre(plaintext(self.body))
-
-    genshi_markup = property(get_genshi_markup)
 
     def delete(self, db=None):
         """Delete a mailinglistmessage"""

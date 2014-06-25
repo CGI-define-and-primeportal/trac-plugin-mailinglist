@@ -2,6 +2,9 @@
 Genshi Transformers useful for HTML Mailing list messages
 """
 
+from trac.attachment import Attachment
+from trac.resource import get_resource_url, ResourceNotFound
+
 from genshi.core import Attrs, QName
 from genshi.core import END, START, TEXT, COMMENT
 
@@ -66,3 +69,41 @@ class RemoveOutlookQuotedMails(object):
             for kind, data, pos in streambuffer:
                 yield kind, data, pos
             yield END, QName('div'), None
+
+class ConvertImgSourcesFromCID(object):
+    """Convert src attributes for images from the "cid" syntax to a
+    URL to the attachment.  Uses the filename as the key rather than
+    the "id" part of the cid syntax - maybe this is wrong. We don't
+    store the "id" looking part of the attachment/image yet though so
+    we couldn't look up the file based on this.
+    """
+
+
+    def __init__(self, href, env, resource):
+        self.href = href
+        self.env = env
+        self.resource = resource
+
+    def __call__(self, stream):
+        for kind, data, pos in stream:
+            if kind is START:
+                tag, attrs = data
+                if tag == 'img' and attrs.get('src', '').startswith("cid:"):
+                    # this is a guess, I don't know the "cid" rules
+                    # and I didn't look them up yet as I'm on a plane.
+                    filename = attrs.get('src')[4:].split("@", 2)[0]
+                    try:
+                        attrs |= [(QName('src'), get_resource_url(self.env,
+                                                                  Attachment(self.env, 
+                                                                             self.resource.realm, 
+                                                                             self.resource.id, 
+                                                                             filename).resource,
+                                                                  self.href,
+                                                                  format="raw"))]
+                    except ResourceNotFound:
+                        self.env.log.warning("Didn't find attachment for %s and img tag attributes %s", 
+                                             self.resource, attrs)
+                    yield kind, (tag, attrs), pos
+                    continue
+
+            yield kind, data, pos
