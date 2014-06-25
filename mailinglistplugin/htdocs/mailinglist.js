@@ -19,11 +19,16 @@ jQuery(function($){
     });
     $(".morebody").each(function(index){
       if ($(this).closest('div.conversation').find('.quoted').length == 0) {
-        $(this).addClass("color-muted");
+        $(this).hide();
       } else { 
         var n = $(this).closest('div.conversation').find('.quoted').data('quotedmessages');
         if ($.isNumeric(n)) { // just in case somehow data was interfered with
-          $(this).text("Show " + n + " Quoted");
+          if (n == 1) {
+            $(this).find('span').text("Quoted message");
+          } else {
+            $(this).find('span').text(n + " Quoted messages");
+          }
+          $(this).show();
         };
       };
     });
