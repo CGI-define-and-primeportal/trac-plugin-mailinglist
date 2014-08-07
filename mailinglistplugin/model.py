@@ -146,7 +146,7 @@ class Mailinglist(object):
             return "%s@%s" % (self.emailaddress, maildomain)
 
     def insert_raw_email(self, bytes):
-        msg = email.message_from_string(bytes.encode('ascii'))
+        msg = email.message_from_string(bytes)
         
         raw = MailinglistRawMessage(self.env, mailinglist=self, bytes=bytes)
         raw.insert()
