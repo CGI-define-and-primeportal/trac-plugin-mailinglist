@@ -121,9 +121,8 @@ class MailinglistAdmin(Component):
 
             if self.env.is_component_enabled('simplifiedpermissionsadminplugin.simplifiedpermissions.SimplifiedPermissions'):
                 from simplifiedpermissionsadminplugin.simplifiedpermissions import SimplifiedPermissions
-                groups = SimplifiedPermissions(self.env).groups
-                for subscribed_group, group_poster in mailinglist.groups():
-                    groups.remove(subscribed_group)
+                # groups is used for subscription, so it should not have subscribed groups in it
+                groups = set(SimplifiedPermissions(self.env).groups) - set([subscribed_group for subscribed_group, group_poster in mailinglist.groups()])
             else:
                 groups = None
             
