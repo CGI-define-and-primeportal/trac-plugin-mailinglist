@@ -1,6 +1,6 @@
 jQuery(function($){
     $('.moreinfo').click(function(e) {
-      $("i", this).toggleClass("icon-resize-full icon-resize-small");
+      $("i", this).toggleClass("fa fa-expand fa-compress");
       $(this).closest('tr').next().toggleClass('hidden');
       $("span", this).text($("span", this).text() == "More info" ? "Less Info" : "More info");
       if($(this).hasClass("last-row")) $(this).closest("tr").toggleClass("last-row");

@@ -251,7 +251,7 @@ class MailinglistModule(Component):
             add_link(req, 'alternate', raw_href, _('mbox'), "application/mbox")
 
             if 'MAILINGLIST_ADMIN' in req.perm:
-                add_ctxtnav(req, tag.a(tag.i(class_="icon-cog"), ' Manage List',
+                add_ctxtnav(req, tag.a(tag.i(class_="fa fa-cog"), ' Manage List',
                 href=req.href.admin('mailinglist', 'lists', message.conversation.mailinglist.emailaddress),
                 title='Manage and subscribe users to the %s mailing list' % message.conversation.mailinglist.name))
 
@@ -293,7 +293,7 @@ class MailinglistModule(Component):
                          _("Back to list of conversations"))
 
             if 'MAILINGLIST_ADMIN' in req.perm:
-                add_ctxtnav(req, tag.a(tag.i(class_="icon-cog"), ' Manage List',
+                add_ctxtnav(req, tag.a(tag.i(class_="fa fa-cog"), ' Manage List',
                 href=req.href.admin('mailinglist', 'lists', conversation.mailinglist.emailaddress),
                 title='Manage and subscribe users to the %s mailing list' % conversation.mailinglist.name))
 
@@ -301,12 +301,12 @@ class MailinglistModule(Component):
             # Check if user is already subscribed to mailing list 
             # and add the appropriate subscribe / unsubscribe ribbon option
             if conversation.mailinglist.is_subscribed(req.authname):
-                add_ctxtnav(req, tag.form(tag.input(tag.a(tag.i(class_='icon-eye-close'),
+                add_ctxtnav(req, tag.form(tag.input(tag.a(tag.i(class_='fa fa-eye-slash'),
                 ' Unsubscribe', title='Unsubscribe from the %s mailing list' % conversation.mailinglist.name, id='subscribe-link'),
                 name='unsubscribe', value=conversation.mailinglist.emailaddress, class_='hidden'),
                 method_='post', action='', id='subscribe-form', class_='hidden'))
             else:
-                add_ctxtnav(req, tag.form(tag.input(tag.a(tag.i(class_='icon-eye-open'),
+                add_ctxtnav(req, tag.form(tag.input(tag.a(tag.i(class_='fa fa-eye'),
                 ' Subscribe', title='Subscribe to the %s mailing list' % conversation.mailinglist.name, id='subscribe-link'),
                 name='subscribe', value=conversation.mailinglist.emailaddress, class_='hidden'),
                 method_='post', action='', id='subscribe-form', class_='hidden'))
@@ -363,19 +363,19 @@ class MailinglistModule(Component):
             prevnext_nav(req, _("Newer conversations"), _("Older conversations"), ("Back to Mailinglists"))
 
             if 'MAILINGLIST_ADMIN' in req.perm:
-                add_ctxtnav(req, tag.a(tag.i(class_="icon-cog"), ' Manage List',
+                add_ctxtnav(req, tag.a(tag.i(class_="fa fa-cog"), ' Manage List',
                 href=req.href.admin('mailinglist', 'lists', mailinglist.emailaddress),
                 title='Manage and subscribe users to the %s mailing list' % mailinglist.name))
 
             # Check if user is already subscribed to mailing list 
             # and add the appropriate subscribe / unsubscribe ribbon option
             if mailinglist.is_subscribed(req.authname):
-                add_ctxtnav(req, tag.form(tag.input(tag.a(tag.i(class_='icon-eye-close'),
+                add_ctxtnav(req, tag.form(tag.input(tag.a(tag.i(class_='fa fa-eye-slash'),
                 ' Unsubscribe', title='Unsubscribe from the %s mailing list' % mailinglist.name, id='subscribe-link'),
                 name='unsubscribe', value=mailinglist.emailaddress, class_='hidden'),
                 method_='post', action='', id='subscribe-form', class_='hidden'))
             else:
-                add_ctxtnav(req, tag.form(tag.input(tag.a(tag.i(class_='icon-eye-open'),
+                add_ctxtnav(req, tag.form(tag.input(tag.a(tag.i(class_='fa fa-eye'),
                 ' Subscribe', title='Subscribe to the %s mailing list' % mailinglist.name, id='subscribe-link'),
                 name='subscribe', value=mailinglist.emailaddress, class_='hidden'),
                 method_='post', action='', id='subscribe-form', class_='hidden'))
