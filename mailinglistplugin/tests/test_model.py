@@ -1,22 +1,13 @@
-from datetime import datetime, timedelta
 import os.path
-from StringIO import StringIO
-import tempfile
-import shutil
 import unittest
 import time
 
-from trac import core
-from trac.web.session import DetachedSession
 from trac.attachment import Attachment
-from trac.core import TracError, implements
-from trac.resource import ResourceNotFound
 from trac.test import EnvironmentStub
-from trac.util.datefmt import from_utimestamp, to_utimestamp, utc
 
 from mailinglistplugin.api import MailinglistSystem
 from mailinglistplugin.perm import MailinglistPermissionPolicy
-from mailinglistplugin.model import Mailinglist, Mailinglist
+from mailinglistplugin.model import Mailinglist
 
 from testdata import rawmsgs, raw_message_with_attachment
 

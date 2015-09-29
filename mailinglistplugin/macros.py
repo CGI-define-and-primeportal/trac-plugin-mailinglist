@@ -1,13 +1,13 @@
 from trac.wiki.macros import WikiMacroBase
 from trac.wiki.api import parse_args
 from trac.wiki.formatter import system_message
-from trac.resource import ResourceSystem, Resource, ResourceNotFound, get_resource_url
+from trac.resource import Resource, get_resource_url
 from trac.util.datefmt import dateinfo
 
 from genshi.builder import tag
 
 from mailinglistplugin.api import MailinglistSystem
-from mailinglistplugin.model import Mailinglist, MailinglistConversation, MailinglistMessage
+from mailinglistplugin.model import Mailinglist, MailinglistMessage
 from mailinglistplugin.utils import wrap_and_quote
 
 class MailinglistMacro(WikiMacroBase):
