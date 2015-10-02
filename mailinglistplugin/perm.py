@@ -1,5 +1,5 @@
-from trac.perm import IPermissionPolicy
-from trac.core import Component, implements
+from trac.perm import IPermissionRequestor, IPermissionPolicy
+from trac.core import Component, implements, TracError, Interface, ExtensionPoint
 
 from mailinglistplugin.api import MailinglistSystem
 from mailinglistplugin.model import MailinglistConversation, MailinglistMessage

@@ -1,7 +1,8 @@
-from trac.mimeview.api import Context
+from trac.mimeview.api import Mimeview, IContentConverter, Context
 from trac.core import *
-from trac.resource import Resource, get_resource_url, ResourceNotFound
-from trac.config import IntOption
+from trac.perm import IPermissionRequestor
+from trac.resource import Resource, IResourceManager, get_resource_url, ResourceNotFound
+from trac.config import BoolOption, IntOption, ListOption
 from trac.web.chrome import INavigationContributor, ITemplateProvider, \
                             add_stylesheet, add_javascript, add_link, \
                             add_ctxtnav, prevnext_nav, add_notice
@@ -9,7 +10,7 @@ from trac.web.main import IRequestHandler
 from trac.timeline.api import ITimelineEventProvider
 from trac.util.translation import _
 from trac.attachment import Attachment, AttachmentModule
-from trac.util.compat import partial
+from trac.util.compat import any, partial
 from trac.wiki.api import IWikiSyntaxProvider
 from trac.util.datefmt import format_datetime, utc, to_timestamp
 from trac.search import ISearchSource, search_to_sql, shorten_result

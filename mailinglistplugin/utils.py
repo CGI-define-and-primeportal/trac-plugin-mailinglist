@@ -1,10 +1,14 @@
 import email
 import email.Header
+from email import Charset
+from email.MIMEText import MIMEText
+from email.MIMEMultipart import MIMEMultipart
+from email.Utils import formatdate, make_msgid
 
 from datetime import datetime
 import re
 
-from trac.util.datefmt import utc
+from trac.util.datefmt import utc, to_timestamp
 
 def wrap_and_quote(text, width):
     text = re.sub('(\n *){3,}', '\n\n', text)

@@ -2,6 +2,7 @@
 
 from trac.core import *
 from trac.resource import Resource, ResourceNotFound
+from trac.mimeview.api import Mimeview, Context
 from trac.util.datefmt import utc, to_timestamp
 from trac.attachment import Attachment
 from trac.util.translation import _
@@ -235,8 +236,8 @@ class Mailinglist(object):
             if not filename or filename is missing:
                     continue
                 
-            part.get_content_type()
-            decode_header(part.get('content-description',''))
+            mime_type = part.get_content_type()
+            description = decode_header(part.get('content-description',''))
             attachment = Attachment(self.env, m.resource.realm, m.resource.id)
             attachmentbytes = part.get_payload(decode=True)
             attachment.author = trac_username

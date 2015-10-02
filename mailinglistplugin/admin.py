@@ -1,12 +1,12 @@
 from trac.core import Component, implements, TracError
 from trac.util.compat import partial
-from trac.web.chrome import ITemplateProvider
+from trac.web.chrome import ITemplateProvider, add_stylesheet, add_script
 from trac.admin.api import IAdminPanelProvider
-from trac.web.chrome import Chrome, add_notice
+from trac.web.chrome import Chrome, add_notice, add_warning
 from trac.util.translation import _
 from trac.resource import ResourceNotFound
 from mailinglistplugin.api import MailinglistSystem
-from mailinglistplugin.model import Mailinglist
+from mailinglistplugin.model import Mailinglist, MailinglistConversation, MailinglistMessage
 
 class MailinglistAdmin(Component):
 
