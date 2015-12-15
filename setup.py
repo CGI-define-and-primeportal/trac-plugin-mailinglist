@@ -1,4 +1,4 @@
-# Copyright (c) 2010, Logica
+# Copyright (c) 2015 CGI
 # 
 # All rights reserved.
 # 
@@ -10,7 +10,7 @@
 #     * Redistributions in binary form must reproduce the above copyright
 #       notice, this list of conditions and the following disclaimer in the
 #       documentation and/or other materials provided with the distribution.
-#     * Neither the name of the <ORGANIZATION> nor the names of its
+#     * Neither the name of CGI nor the names of its
 #       contributors may be used to endorse or promote products derived from
 #       this software without specific prior written permission.
 # 
@@ -33,10 +33,15 @@ setup(
     name = 'MailinglistPlugin',
     version = '0.1',
     author = 'Nick Piper',
-    author_email = 'nick.piper@logica.com',
+    author_email = 'nick.piper@cgi.com',
+    maintainer="CGI CoreTeam",
+    maintainer_email="coreteam.service.desk.se@cgi.com",
+    contact="CGI CoreTeam",
+    contact_email="coreteam.service.desk.se@cgi.com",
+    classifiers=['License :: OSI Approved :: BSD License'],
+    license='BSD',
+    url='http://define.primeportal.com/',
     description = 'Mailing list archive.',
-    license = \
-    """Copyright (c) 2010, Logica. All rights reserved. Released under the 3-clause BSD license. """,
     packages = ['mailinglistplugin'],
     package_data = {'mailinglistplugin': [
         'templates/*.html',
